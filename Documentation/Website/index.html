@@ -7,9 +7,16 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Overview | Wexford House Railway Variable Auditor</title>
+<title>Overview | Railway Variable Auditor</title>
 <meta name="description" content="Railway Variable Auditor signs in to Railway, finds every workspace you can access, and writes every environment variable with its value to one CSV file, so you can rotate your keys after the security disclosure of 21 October 2026.">
-<meta name="theme-color" content="#0a1f35">
+<meta name="theme-color" content="#10272e">
+<link rel="canonical" href="https://rwdc-wexfordhouse.github.io/railway-variable-auditor/">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Overview | Railway Variable Auditor">
+<meta property="og:description" content="Railway Variable Auditor signs in to Railway, finds every workspace you can access, and writes every environment variable with its value to one CSV file, so you can rotate your keys after the security disclosure of 21 October 2026.">
+<meta property="og:url" content="https://rwdc-wexfordhouse.github.io/railway-variable-auditor/">
+<meta property="og:image" content="https://rwdc-wexfordhouse.github.io/railway-variable-auditor/assets/img/app/03-results.png">
+<meta name="twitter:card" content="summary_large_image">
 <link rel="icon" href="assets/img/favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="assets/css/style.css">
 </head>
@@ -17,10 +24,10 @@
 <a class="skip" href="#main">Skip to content</a>
 <header class="site-header">
 <div class="wrap">
-<a class="brand" href="index.html" aria-label="Wexford House Railway Variable Auditor - home"><img src="assets/img/favicon.svg" alt="" width="38" height="38"><span><b>Wexford House</b><small>Railway Variable Auditor</small></span></a>
+<a class="brand" href="index.html" aria-label="Railway Variable Auditor - home"><img src="assets/img/favicon.svg" alt="" width="38" height="38"><span><b>Railway Variable Auditor</b><small>Independent tool by Wexford House</small></span></a>
 <input type="checkbox" id="nav-toggle" class="nav-toggle" aria-label="Toggle navigation menu">
 <label for="nav-toggle" class="nav-button" aria-hidden="true"><span></span><span></span><span></span></label>
-<nav class="site-nav" aria-label="Main"><a href="index.html" aria-current="page">Overview</a><a href="how-it-works.html">How it works</a><a href="checklist.html">Checklist</a><a href="sdk.html">SDK reference</a><a href="building.html">Building</a><a href="windows.html">Windows</a><a href="security.html">Security</a></nav>
+<nav class="site-nav" aria-label="Main"><a href="index.html" aria-current="page">Overview</a><a href="how-it-works.html">How it works</a><a href="checklist.html">Checklist</a><a href="sdk.html">SDK reference</a><a href="building.html">Building</a><a href="windows.html">Windows</a><a href="security.html">Security</a><a href="https://github.com/rwdc-wexfordhouse/railway-variable-auditor">Source</a></nav>
 </div>
 </header>
 <main id="main">
@@ -29,7 +36,7 @@
 <div class="wrap">
 <span class="eyebrow">Incident response tool</span>
 <h1>Every Railway variable, in one file.</h1>
-<p class="lead">On 21 October 2026 Railway disclosed that an unauthorised third party may have accessed encrypted environment variables and, for some of them, obtained the decrypted contents. Railway Variable Auditor helps you respond. It signs in to Railway, finds every workspace you can access, reads every variable on every service, and writes them, with their current values, to one CSV file. Then you work your way through it. Read <a href="https://blog.railway.com/p/security-disclosure-wednesday-october-21st" style="color:#d9bd86">Railway&rsquo;s disclosure</a> first.</p>
+<p class="lead">On 21 October 2026 Railway disclosed that an unauthorised third party may have accessed encrypted environment variables and, for some of them, obtained the decrypted contents. Railway Variable Auditor helps you respond. It signs in to Railway, finds every workspace you can access, reads every variable on every service, and writes them, with their current values, to one CSV file. Then you work your way through it. Read <a href="https://blog.railway.com/p/security-disclosure-wednesday-october-21st" style="color:#7fd6d3">Railway&rsquo;s disclosure</a> first.</p>
 <div class="hero-actions">
 <a class="btn btn-gold" href="how-it-works.html">How it works</a>
 <a class="btn btn-ghost" href="checklist.html">Checklist</a>
@@ -40,6 +47,7 @@
 <section class="section">
 <div class="wrap">
 <div class="callout"><strong class="t">What is built</strong><p>The audit window and the audit command are written and tested against a fake Railway. <b>They have not yet been run on the author&rsquo;s live account. Run one yourself and check the result.</b> The tool only reads. It never changes anything in Railway. It was called Railway Variable Cycler before it became an audit tool.</p></div>
+<div class="callout"><strong class="t">Independent, free software</strong><p>This is an independent tool by Wexford House. It is not made, endorsed or supported by Railway. It is released under the GNU General Public Licence, version 3, with no warranty. The audit file it writes holds live secrets, so keep it safe and delete it when you have finished.</p></div>
 <div class="section-head">
 <span class="eyebrow">At a glance</span>
 <h2>One job: show you everything.</h2>
@@ -93,6 +101,22 @@
 <section class="section alt">
 <div class="wrap">
 <div class="section-head">
+<span class="eyebrow">Get it</span>
+<h2>Build it from the source.</h2>
+<p>No release has been published yet, so there is nothing to download. The whole source is on GitHub, and you can build it yourself.</p>
+</div>
+<ul>
+<li><b>Linux, from source:</b> <code>meson setup build &amp;&amp; meson compile -C build &amp;&amp; meson test -C build</code>. See <a href="building.html">Building</a>.</li>
+<li><b>RPM (RHEL 10 and similar):</b> run <code>Packaging/build-rpm.sh</code>.</li>
+<li><b>Windows 11 setup program:</b> <code>make installer</code>, cross-compiled on Linux. It has been run under Wine only, so see <a href="windows.html">Windows</a> first.</li>
+<li><b>Source and issues:</b> <a href="https://github.com/rwdc-wexfordhouse/railway-variable-auditor">GitHub</a>. Please report problems there. Security problems go to the contact in the <a href="https://github.com/rwdc-wexfordhouse/railway-variable-auditor/blob/main/SECURITY.md">security policy</a>.</li>
+</ul>
+</div>
+</section>
+
+<section class="section alt">
+<div class="wrap">
+<div class="section-head">
 <span class="eyebrow">Find your way</span>
 <h2>Where to start.</h2>
 </div>
@@ -108,12 +132,13 @@
 <footer class="site-footer">
 <div class="wrap">
 <div class="cols">
-<div><a class="brand" href="index.html" aria-label="Wexford House Railway Variable Auditor - home"><img src="assets/img/favicon.svg" alt="" width="38" height="38"><span><b>Wexford House</b><small>Railway Variable Auditor</small></span></a>
+<div><a class="brand" href="index.html" aria-label="Railway Variable Auditor - home"><img src="assets/img/favicon.svg" alt="" width="38" height="38"><span><b>Railway Variable Auditor</b><small>Independent tool by Wexford House</small></span></a>
 <p style="margin-top:18px;max-width:34ch">Lists every environment variable, with its value, in every Railway workspace you can reach, in one CSV file.</p></div>
 <div><h4>Guides</h4><ul><li><a href="index.html">Overview</a></li><li><a href="how-it-works.html">How it works</a></li><li><a href="checklist.html">Checklist</a></li><li><a href="sdk.html">SDK reference</a></li><li><a href="building.html">Building</a></li><li><a href="windows.html">Windows</a></li><li><a href="security.html">Security</a></li></ul></div>
+<div><h4>Project</h4><ul><li><a href="https://github.com/rwdc-wexfordhouse/railway-variable-auditor">Source on GitHub</a></li><li><a href="https://github.com/rwdc-wexfordhouse/railway-variable-auditor/releases">Releases</a></li><li><a href="https://github.com/rwdc-wexfordhouse/railway-variable-auditor/issues">Report a problem</a></li><li><a href="https://github.com/rwdc-wexfordhouse/railway-variable-auditor/blob/main/SECURITY.md">Security policy</a></li><li><a href="https://github.com/rwdc-wexfordhouse/railway-variable-auditor/blob/main/LICENSE">Licence (GPLv3)</a></li><li><a href="https://github.com/rwdc-wexfordhouse/railway-variable-auditor/blob/main/THIRD-PARTY-NOTICES.md">Third party notices</a></li></ul></div>
 <div><h4>Reference</h4><ul><li><a href="sdk.html">SDK reference</a></li><li><a href="https://docs.railway.com/integrations/api">Railway API documentation</a></li></ul></div>
 </div>
-<p class="legal">&copy; Wexford House. Licensed under the GNU General Public Licence, version 3. Man pages: <code>railway-variable-auditor(1)</code>, <code>railway-variable-audit(1)</code>, <code>railway-variable-auditor-csv(5)</code>, <code>railway(3)</code>, <code>rvcore(3)</code>. Screenshots show demonstration data.</p>
+<p class="legal">Railway Variable Auditor is free software, licensed under the <a href="https://github.com/rwdc-wexfordhouse/railway-variable-auditor/blob/main/LICENSE">GNU General Public Licence, version 3</a>, with no warranty. It is an independent tool by Wexford House. It is not made, endorsed or supported by Railway. Man pages: <code>railway-variable-auditor(1)</code>, <code>railway-variable-audit(1)</code>, <code>railway-variable-auditor-csv(5)</code>, <code>railway(3)</code>, <code>rvcore(3)</code>. Screenshots show demonstration data.</p>
 </div>
 </footer>
 </body>
