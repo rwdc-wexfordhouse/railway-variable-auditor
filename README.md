@@ -12,6 +12,8 @@ Sign in with the Railway CLI (`railway login`), a browser sign-in as yourself th
 
 > **Not official.** This is an independent tool by Wexford House. It is not made, endorsed or supported by Railway. It comes with no warranty (see `LICENSE`). It has not yet been run by its author against a live account, and the Windows build has not been run on Windows 11. `audit.csv` holds live secrets: keep it safe and delete it when you have finished.
 
+Website: https://rwdc-wexfordhouse.github.io/railway-variable-auditor/
+
 ## Status
 
 | Part | State |
