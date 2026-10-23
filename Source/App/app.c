@@ -17,6 +17,9 @@
 #include <glib/gstdio.h>
 #include <gtk/gtk.h>
 #include <string.h>
+#ifdef G_OS_WIN32
+#include <windows.h>
+#endif
 
 #include "rvcore.h"
 
@@ -866,6 +869,16 @@ main(int argc, char **argv)
     App *app = g_new0(App, 1);
     GtkApplication *application = gtk_application_new(APP_ID, G_APPLICATION_DEFAULT_FLAGS);
     int status;
+
+#ifdef G_OS_WIN32
+    /*
+     * A GUI program has no console, and from GLib's console-less spawn path the
+     * Railway CLI exits 0 with no output. Give the window a hidden console of its
+     * own so the CLI inherits it. rw_cli_login() shows it while the CLI asks for input.
+     */
+    if (GetConsoleWindow() == NULL && AllocConsole())
+        ShowWindow(GetConsoleWindow(), SW_HIDE);
+#endif
 
     g_signal_connect(application, "activate", G_CALLBACK(on_activate), app);
 #ifdef RVC_AUTOMATION

@@ -7,6 +7,9 @@
 
 #include <gio/gio.h>
 #include <string.h>
+#ifdef G_OS_WIN32
+#include <windows.h>
+#endif
 
 #define RW_CLI_INSTALL_HINT \
     "The Railway CLI was not found. Install it (brew install railway, " \
@@ -310,6 +313,15 @@ run_interactive(const gchar *command, GError **error)
     argv[1] = command;
     argv[2] = NULL;
 
+#ifdef G_OS_WIN32
+    /* The window keeps a hidden console; show it so the sign-in prompt and link can be seen. */
+    HWND console = GetConsoleWindow();
+    gboolean was_visible = console != NULL && IsWindowVisible(console);
+
+    if (console != NULL && !was_visible)
+        ShowWindow(console, SW_SHOW);
+#endif
+
     /* The child keeps our terminal so it can show the sign-in link. */
     process = g_subprocess_newv(argv, G_SUBPROCESS_FLAGS_NONE, &local);
     g_free(program);
@@ -317,10 +329,18 @@ run_interactive(const gchar *command, GError **error)
         g_set_error(error, RW_ERROR, RW_ERROR_CLI,
                     "Could not run the Railway CLI: %s", local->message);
         g_error_free(local);
+#ifdef G_OS_WIN32
+        if (console != NULL && !was_visible)
+            ShowWindow(console, SW_HIDE);
+#endif
         return FALSE;
     }
 
     ok = g_subprocess_wait_check(process, NULL, &local);
+#ifdef G_OS_WIN32
+    if (console != NULL && !was_visible)
+        ShowWindow(console, SW_HIDE);
+#endif
     if (!ok) {
         g_set_error(error, RW_ERROR, RW_ERROR_CLI,
                     "railway %s did not complete: %s", command, local->message);
