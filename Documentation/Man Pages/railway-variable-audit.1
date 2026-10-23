@@ -1,0 +1,82 @@
+.\" Copyright (c) 2026, Wexford House <https://wexfordhouse.co.za/>
+.\" Copyright (c) 2026, Ross Cameron <ross@wexfordhouse.co.za>
+.\" Licensed under the GNU General Public License, version 3.
+.TH RAILWAY-VARIABLE-AUDIT 1 "October 2026" "Railway Variable Auditor 0.1.0" "User Commands"
+.SH NAME
+railway-variable-audit \- write every Railway variable, with its value, to one CSV file
+.SH SYNOPSIS
+.B railway-variable-audit
+.RB [ \-\-out
+.IR FOLDER ]
+.RB [ \-\-policy
+.IR FILE ]
+.br
+.B railway-variable-audit \-\-help
+.SH DESCRIPTION
+Signs in through the Railway CLI, finds every workspace you can access, and reads every variable of every service and environment in every project. It writes them, with their current values, to
+.I audit.csv
+in a new run folder on your Desktop (or in the folder given with
+.BR \-\-out ).
+Work through that file to rotate your keys by hand. The same audit is available in a window as
+.BR railway-variable-auditor (1).
+.PP
+It is read only. It never writes to Railway. It never prints a value to the terminal. Values are the stored ones, so a reference such as ${{Postgres.DATABASE_URL}} appears as written.
+.PP
+A workspace, project or environment that cannot be read does not stop the rest. It is listed on the terminal, with the reason, and the exit status is 1. A variable that Railway hides from the API (a sealed variable) appears with an empty value.
+.PP
+Sign in first with
+.BR "railway login" .
+.SH OPTIONS
+.TP
+.BI \-\-out " FOLDER"
+Where to create the run folder
+.RI ( run-YYYYMMDD-HHMMSS ).
+The default is your Desktop, or your home folder if there is no Desktop.
+.TP
+.BI \-\-policy " FILE"
+The policy file, used for the category column. The default is
+.I policy.ini
+in the user configuration folder.
+.TP
+.B \-\-help
+Show the usage and exit.
+.SH EXIT STATUS
+.TP
+.B 0
+The audit was complete.
+.TP
+.B 1
+Some workspaces or projects were skipped or failed. They are listed on the terminal.
+.TP
+.B 2
+The audit could not start: the Railway CLI is missing, nobody is signed in, or a file could not be written.
+.SH FILES
+.TP
+.I audit.csv
+Every variable with its value. Contains live secrets. It is created readable by you only (mode 0600). Delete it when you have finished.
+.PP
+See
+.BR railway-variable-auditor-csv (5).
+.SH WINDOWS
+The installer puts
+.B railway-variable-audit.exe
+on the user's PATH (the option can be turned off in Setup, or with
+.BR \-\-no\-path ).
+Arguments and file names are read as UTF-8. The file
+.I audit.csv
+is restricted to the current user with an access list instead of mode 0600. See
+.BR railway-variable-auditor (1).
+.SH ENVIRONMENT
+.TP
+.B RVC_RAILWAY_CLI
+The path of the Railway CLI program, when it is not on the path. Used by the tests to run a fake CLI.
+.SH SECURITY
+Requests go through the Railway CLI. The program does not handle your token. Values pass through the program's memory and are overwritten when freed. Treat every value as possibly exposed in the Railway incident, and treat
+.I audit.csv
+as the most sensitive file you have.
+.SH SEE ALSO
+.BR railway-variable-auditor (1),
+.BR railway-variable-auditor-csv (5),
+.BR rvcore (3)
+.SH AUTHORS
+Ross Cameron <ross@wexfordhouse.co.za>, Wexford House.

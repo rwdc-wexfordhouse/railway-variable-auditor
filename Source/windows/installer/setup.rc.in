@@ -1,0 +1,98 @@
+#include <windows.h>
+#include <commctrl.h>
+#include "resource.h"
+
+1 24 "@MANIFEST@"
+IDI_APP_ICON ICON "@ICON@"
+
+VS_VERSION_INFO VERSIONINFO
+FILEVERSION     @MAJOR@,@MINOR@,@PATCH@,0
+PRODUCTVERSION  @MAJOR@,@MINOR@,@PATCH@,0
+FILEOS          VOS_NT_WINDOWS32
+FILETYPE        VFT_APP
+BEGIN
+    BLOCK "StringFileInfo"
+    BEGIN
+        BLOCK "080904b0"
+        BEGIN
+            VALUE "CompanyName",     "Wexford House"
+            VALUE "FileDescription", "Railway Variable Auditor Setup"
+            VALUE "FileVersion",     "@VERSION@"
+            VALUE "ProductName",     "Railway Variable Auditor"
+            VALUE "ProductVersion",  "@VERSION@"
+        END
+    END
+    BLOCK "VarFileInfo"
+    BEGIN
+        VALUE "Translation", 0x0809, 1200
+    END
+END
+
+IDD_WELCOME DIALOGEX 0, 0, 317, 193
+STYLE DS_SHELLFONT | DS_CONTROL | WS_CHILD
+FONT 8, "MS Shell Dlg"
+BEGIN
+    ICON    IDI_APP_ICON, IDC_STATIC, 20, 16, 32, 32
+    LTEXT   "Welcome to the Railway Variable Auditor Setup Wizard", IDC_STATIC, 62, 24, 235, 24
+    LTEXT   "This installs Railway Variable Auditor on your computer. It signs in to Railway through the Railway CLI, finds every workspace you can access, and writes every variable, with its value, to one CSV file.\n\nIt installs for your account only and does not need administrator rights. It needs the Railway CLI, which Setup does not install.\n\nClick Next to continue.", IDC_STATIC, 20, 60, 277, 110
+END
+
+IDD_LICENSE DIALOGEX 0, 0, 317, 193
+STYLE DS_SHELLFONT | DS_CONTROL | WS_CHILD
+FONT 8, "MS Shell Dlg"
+BEGIN
+    LTEXT     "Licence Agreement", IDC_STATIC, 20, 10, 277, 12
+    LTEXT     "Please read the licence before installing Railway Variable Auditor.", IDC_STATIC, 20, 24, 277, 10
+    EDITTEXT  IDC_LICENSE_EDIT, 20, 38, 277, 125, ES_MULTILINE | ES_READONLY | ES_AUTOVSCROLL | WS_VSCROLL | WS_BORDER | WS_TABSTOP
+    AUTOCHECKBOX "I &accept the terms of the licence", IDC_ACCEPT, 20, 170, 250, 10
+END
+
+IDD_DESTINATION DIALOGEX 0, 0, 317, 193
+STYLE DS_SHELLFONT | DS_CONTROL | WS_CHILD
+FONT 8, "MS Shell Dlg"
+BEGIN
+    LTEXT     "Choose Install Location", IDC_STATIC, 20, 10, 277, 12
+    LTEXT     "Setup will install Railway Variable Auditor in the folder below. To use another folder, click Browse.", IDC_STATIC, 20, 26, 277, 24
+    EDITTEXT  IDC_DESTDIR, 20, 58, 220, 14, ES_AUTOHSCROLL | WS_TABSTOP
+    PUSHBUTTON "Bro&wse...", IDC_BROWSE, 246, 57, 51, 16
+END
+
+IDD_OPTIONS DIALOGEX 0, 0, 317, 193
+STYLE DS_SHELLFONT | DS_CONTROL | WS_CHILD
+FONT 8, "MS Shell Dlg"
+BEGIN
+    LTEXT        "Choose Options", IDC_STATIC, 20, 10, 277, 12
+    LTEXT        "Select what Setup should do.", IDC_STATIC, 20, 26, 277, 10
+    AUTOCHECKBOX "Add a Start menu folder", IDC_OPT_MENU, 24, 48, 270, 10
+    AUTOCHECKBOX "Add a Desktop shortcut", IDC_OPT_DESKTOP, 24, 66, 270, 10
+    AUTOCHECKBOX "Add the command line tool (railway-variable-audit) to my PATH", IDC_OPT_PATH, 24, 84, 270, 10
+END
+
+IDD_READY DIALOGEX 0, 0, 317, 193
+STYLE DS_SHELLFONT | DS_CONTROL | WS_CHILD
+FONT 8, "MS Shell Dlg"
+BEGIN
+    LTEXT     "Ready to Install", IDC_STATIC, 20, 10, 277, 12
+    LTEXT     "Setup is ready to install Railway Variable Auditor.\n\nClick Install to continue, or Back to change anything.", IDC_STATIC, 20, 26, 277, 30
+    LTEXT     "", IDC_READY_TEXT, 20, 62, 277, 80
+END
+
+IDD_INSTALLING DIALOGEX 0, 0, 317, 193
+STYLE DS_SHELLFONT | DS_CONTROL | WS_CHILD
+FONT 8, "MS Shell Dlg"
+BEGIN
+    LTEXT     "Installing", IDC_STATIC, 20, 10, 277, 12
+    LTEXT     "Please wait while Railway Variable Auditor is installed.", IDC_STATIC, 20, 26, 277, 10
+    CONTROL   "", IDC_PROGRESS, "msctls_progress32", WS_BORDER, 20, 60, 277, 14
+    LTEXT     "", IDC_STATUS, 20, 84, 277, 40
+END
+
+IDD_FINISH DIALOGEX 0, 0, 317, 193
+STYLE DS_SHELLFONT | DS_CONTROL | WS_CHILD
+FONT 8, "MS Shell Dlg"
+BEGIN
+    ICON      IDI_APP_ICON, IDC_STATIC, 20, 16, 32, 32
+    LTEXT     "Completing the Railway Variable Auditor Setup Wizard", IDC_STATIC, 62, 24, 235, 24
+    LTEXT     "", IDC_FINISH_TEXT, 20, 60, 277, 80
+    AUTOCHECKBOX "&Start Railway Variable Auditor", IDC_LAUNCH, 20, 150, 200, 10
+END

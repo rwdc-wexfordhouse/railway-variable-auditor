@@ -1,0 +1,137 @@
+<!--
+  Copyright (c) 2026, Ross WD Cameron <ross@wexfordhouse.co.za>
+  Copyright (c) 2026, Wexford House <https://wexfordhouse.co.za/>
+-->
+<!doctype html>
+<html lang="en-ZA">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Building | Wexford House Railway Variable Auditor</title>
+<meta name="description" content="How to build and test Railway Variable Auditor with Meson on Red Hat Enterprise Linux, and the Windows setup program.">
+<meta name="theme-color" content="#0a1f35">
+<link rel="icon" href="assets/img/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="site-header">
+<div class="wrap">
+<a class="brand" href="index.html" aria-label="Wexford House Railway Variable Auditor - home"><img src="assets/img/favicon.svg" alt="" width="38" height="38"><span><b>Wexford House</b><small>Railway Variable Auditor</small></span></a>
+<input type="checkbox" id="nav-toggle" class="nav-toggle" aria-label="Toggle navigation menu">
+<label for="nav-toggle" class="nav-button" aria-hidden="true"><span></span><span></span><span></span></label>
+<nav class="site-nav" aria-label="Main"><a href="index.html">Overview</a><a href="how-it-works.html">How it works</a><a href="checklist.html">Checklist</a><a href="sdk.html">SDK reference</a><a href="building.html" aria-current="page">Building</a><a href="windows.html">Windows</a><a href="security.html">Security</a></nav>
+</div>
+</header>
+<main id="main">
+<section class="page-head"><div class="wrap">
+<div class="crumbs"><a href="index.html">Overview</a> &nbsp;/&nbsp; Building</div>
+<span class="eyebrow">For builders</span>
+<h1>Building</h1>
+<p class="lead">Dependencies, and the commands to build and test.</p>
+</div></section>
+<div class="wrap doc">
+<article>
+
+<div class="callout warn"><strong class="t">What has been tried</strong><p>Everything builds on Red Hat Enterprise Linux: the SDK, the engine, the audit command and the audit window. The commands below were run there. The Windows setup program is cross-compiled there too, and has only been run under Wine (see <a href="windows.html">Windows</a>). macOS has not been tried, and the macOS package names have not been checked. The application builds, and has been driven end to end on demonstration data in a headless compositor (see <a href="#screenshots">Taking the screenshots</a>), but not yet used on a real screen with a real account.</p></div>
+
+<h2 id="needs">What you need</h2>
+<ul class="checks">
+<li>A C11 compiler</li>
+<li>Meson and Ninja</li>
+<li>GTK 4.10 or newer (the application)</li>
+<li>GLib, GIO and json-glib</li>
+<li>The Railway CLI, needed at run time (the SDK unit tests use a fake one)</li>
+</ul>
+
+<h2 id="commands">Build and test</h2>
+<pre><code>meson setup build
+meson compile -C build
+meson test -C build</code></pre>
+<p>A clean build produces no warnings. The test run reports the SDK tests, the engine tests, the audit command test, and a live suite that needs Docker (see below). The tests that exercise the real transport use a fake <code>railway</code> script and run on Linux and macOS only. None of the tests use the network.</p>
+
+<h2 id="live">The live database check</h2>
+<pre><code>meson test -C build --suite live</code></pre>
+<p>This checks the set aside database code against a throwaway PostgreSQL in a container (bound to 127.0.0.1 only). It is skipped if Docker is missing, and the audit does not need it. The default test run does not include it.</p>
+
+<h2 id="install">Install and run</h2>
+<pre><code>meson install -C build</code></pre>
+<p>This installs two programs, the man pages, and a copy of this website:</p>
+<div class="table-wrap"><table>
+<thead><tr><th>Program</th><th>What it is</th></tr></thead>
+<tbody>
+<tr><td><code>railway-variable-auditor</code></td><td>The audit window (GTK 4).</td></tr>
+<tr><td><code>railway-variable-audit</code></td><td>The same audit without a window. Sign in first with <code>railway login</code>.</td></tr>
+</tbody></table></div>
+
+<h2 id="platforms">Installing the dependencies</h2>
+<h3>Red Hat Enterprise Linux</h3>
+<pre><code>sudo dnf install gcc meson ninja-build gtk4-devel json-glib-devel
+npm i -g @railway/cli</code></pre>
+<h3>macOS</h3>
+<pre><code>brew install meson gtk4 json-glib railway</code></pre>
+<h3>Microsoft Windows</h3>
+<p>The Windows build is cross-compiled on Linux and packaged as a per-user setup program. See <a href="windows.html">Windows</a>. Building on Windows itself (MSYS2) has not been tried.</p>
+<div class="callout"><strong class="t">Package names</strong><p>The package names above have not been checked against each platform&rsquo;s package manager. The libraries themselves are confirmed to build and link on Red Hat Enterprise Linux.</p></div>
+
+<h2 id="rpm">Building an RPM</h2>
+<p>For Rocky Linux 10 and other Red Hat Enterprise Linux 10 systems. The spec file is <code>Packaging/railway-variable-auditor.spec</code>.</p>
+<pre><code>sudo dnf install rpm-build meson gcc glib2-devel json-glib-devel gtk4-devel desktop-file-utils
+Packaging/build-rpm.sh
+sudo dnf install Packaging/dist/railway-variable-auditor-0.1.0-8.el10.x86_64.rpm</code></pre>
+<ul class="checks">
+<li><b>What is in it.</b> The window and the audit command, the man pages, this website (under <code>/usr/share/doc/railway-variable-auditor/Website</code>), a menu entry and an icon, and the licence.</li>
+<li><b>The tests run during the build.</b> The package build runs the unit tests and validates the menu entry, and fails if either fails.</li>
+<li><b>The Railway CLI is not in the package.</b> It has no RPM. Install it yourself (<code>npm i -g @railway/cli</code>) and run <code>railway login</code>. The program tells you if it is missing.</li>
+</ul>
+
+<h2 id="screenshots">Taking the screenshots</h2>
+<p>The screenshots on this website are taken by the program itself, so they stay true to the window and can be made again in one command whenever the window changes.</p>
+<pre><code>Source/Tools/make-screenshots.sh</code></pre>
+<ul class="checks">
+<li><b>It builds a special version.</b> The Meson option <code>-Dautomation=true</code> adds a demonstration mode and a screenshot driver. A normal build does not have them.</li>
+<li><b>Demonstration data only.</b> <code>--demo</code> replaces Railway with a built-in stand-in holding invented data for an invented company. It does not run the Railway CLI, does not read or change your policy file, and writes only to a temporary folder. Nothing on your account is touched, and no real name can end up in a screenshot.</li>
+<li><b>Nothing appears on your screen.</b> The script starts a private, headless Wayland compositor (<code>mutter --headless</code>) and runs the window inside it, with the software renderer.</li>
+<li><b>The window drives itself.</b> <code>--screenshots DIR</code> walks through every screen: start, reading, the results, the results after an audit that could not read one project. It saves a PNG of each, using GTK&rsquo;s own offscreen rendering, and quits.</li>
+<li><b>It exercises the real engine.</b> The audit runs for real against the stand-in, and writes real files to a temporary folder, so a broken screen shows up here.</li>
+</ul>
+<p>It needs <code>meson</code>, <code>ninja</code>, <code>mutter</code> and <code>dbus-run-session</code>. By default it writes to <code>Documentation/Website/assets/img/app</code>. Look at the pictures after each run: they have already shown real problems in the window.</p>
+<p>You can also try the demonstration by hand, on a screen, with a build made with <code>-Dautomation=true</code>:</p>
+<pre><code>railway-variable-auditor --demo</code></pre>
+
+<h2 id="layout">Source layout</h2>
+<div class="table-wrap"><table>
+<thead><tr><th>Path</th><th>Contents</th></tr></thead>
+<tbody>
+<tr><td><code>Source/SDK/railway.h</code>, <code>railway.c</code></td><td>The public API and the client.</td></tr>
+<tr><td><code>Source/SDK/railway-cli.c</code></td><td>The transport that runs the Railway CLI, and the sign-in helpers.</td></tr>
+<tr><td><code>Source/SDK/tests/test-railway.c</code></td><td>Unit tests with a mock transport.</td></tr>
+<tr><td><code>Source/Core/</code></td><td>The engine: discover, read, classify, policy and CSV (used by the audit), and the set aside rotation code.</td></tr>
+<tr><td><code>Source/Tools/audit.c</code></td><td>The audit command, with an end to end test and a fake CLI in <code>Source/Tools/tests/</code>.</td></tr>
+<tr><td><code>Source/Tools/scan.c</code></td><td>The old read only scan command. Built, but not installed.</td></tr>
+<tr><td><code>Source/App/app.c</code></td><td>The audit window.</td></tr>
+<tr><td><code>Source/App/demo.c</code></td><td>The demonstration stand-in for Railway, built only with <code>-Dautomation=true</code>.</td></tr>
+<tr><td><code>Source/Tools/make-screenshots.sh</code></td><td>Takes the website screenshots.</td></tr>
+<tr><td><code>Source/windows/</code></td><td>Windows resources and the hand-written setup program (<code>installer/</code>).</td></tr>
+<tr><td><code>Support/windows/</code></td><td>Fetching the MSYS2 packages, making the bundle and the setup program, and the Wine test.</td></tr>
+<tr><td><code>Documentation/</code></td><td>This website and the man pages.</td></tr>
+</tbody></table></div>
+
+<nav class="pager" aria-label="Page navigation"><a class="prev" href="sdk.html"><small>Previous</small><b>SDK reference</b></a><a class="next" href="windows.html"><small>Next</small><b>Windows</b></a></nav>
+</article>
+<aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li><a href="#needs">What you need</a></li><li><a href="#commands">Build and test</a></li><li><a href="#live">The live database check</a></li><li><a href="#install">Install and run</a></li><li><a href="#platforms">Dependencies</a></li><li><a href="#rpm">Building an RPM</a></li><li><a href="#screenshots">Taking the screenshots</a></li><li><a href="#layout">Source layout</a></li></ul></aside>
+</div>
+</main>
+<footer class="site-footer">
+<div class="wrap">
+<div class="cols">
+<div><a class="brand" href="index.html" aria-label="Wexford House Railway Variable Auditor - home"><img src="assets/img/favicon.svg" alt="" width="38" height="38"><span><b>Wexford House</b><small>Railway Variable Auditor</small></span></a>
+<p style="margin-top:18px;max-width:34ch">Lists every environment variable, with its value, in every Railway workspace you can reach, in one CSV file.</p></div>
+<div><h4>Guides</h4><ul><li><a href="index.html">Overview</a></li><li><a href="how-it-works.html">How it works</a></li><li><a href="checklist.html">Checklist</a></li><li><a href="sdk.html">SDK reference</a></li><li><a href="building.html">Building</a></li><li><a href="windows.html">Windows</a></li><li><a href="security.html">Security</a></li></ul></div>
+<div><h4>Reference</h4><ul><li><a href="sdk.html">SDK reference</a></li><li><a href="https://docs.railway.com/integrations/api">Railway API documentation</a></li></ul></div>
+</div>
+<p class="legal">&copy; Wexford House. Licensed under the GNU General Public Licence, version 3. Man pages: <code>railway-variable-auditor(1)</code>, <code>railway-variable-audit(1)</code>, <code>railway-variable-auditor-csv(5)</code>, <code>railway(3)</code>, <code>rvcore(3)</code>. Screenshots show demonstration data.</p>
+</div>
+</footer>
+</body>
+</html>

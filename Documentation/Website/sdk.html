@@ -1,0 +1,186 @@
+<!--
+  Copyright (c) 2026, Ross WD Cameron <ross@wexfordhouse.co.za>
+  Copyright (c) 2026, Wexford House <https://wexfordhouse.co.za/>
+-->
+<!doctype html>
+<html lang="en-ZA">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SDK reference | Wexford House Railway Variable Auditor</title>
+<meta name="description" content="Reference for the C11 Railway SDK: client, listing, variables, errors, rate limits and testing.">
+<meta name="theme-color" content="#0a1f35">
+<link rel="icon" href="assets/img/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="site-header">
+<div class="wrap">
+<a class="brand" href="index.html" aria-label="Wexford House Railway Variable Auditor - home"><img src="assets/img/favicon.svg" alt="" width="38" height="38"><span><b>Wexford House</b><small>Railway Variable Auditor</small></span></a>
+<input type="checkbox" id="nav-toggle" class="nav-toggle" aria-label="Toggle navigation menu">
+<label for="nav-toggle" class="nav-button" aria-hidden="true"><span></span><span></span><span></span></label>
+<nav class="site-nav" aria-label="Main"><a href="index.html">Overview</a><a href="how-it-works.html">How it works</a><a href="checklist.html">Checklist</a><a href="sdk.html" aria-current="page">SDK reference</a><a href="building.html">Building</a><a href="windows.html">Windows</a><a href="security.html">Security</a></nav>
+</div>
+</header>
+<main id="main">
+<section class="page-head"><div class="wrap">
+<div class="crumbs"><a href="index.html">Overview</a> &nbsp;/&nbsp; SDK reference</div>
+<span class="eyebrow">For developers</span>
+<h1>SDK reference</h1>
+<p class="lead">The C11 Railway SDK: every function, error code and rate limit rule.</p>
+</div></section>
+<div class="wrap doc">
+<article>
+
+<div class="callout"><strong class="t">Who this page is for</strong><p>Developers of the application. The same content is in the man pages <code>railway(3)</code> and <code>rvcore(3)</code>. The SDK is C11 and uses GLib, GIO and json-glib. It needs the Railway CLI at run time. Calls block, so run them off the GUI thread. One client must not be used from two threads at once.</p></div>
+
+<h2 id="overview">Overview</h2>
+<p>The SDK sends GraphQL operations to the Railway public API through the Railway CLI (<code>railway api</code>). The user signs in with <code>railway login</code>, a browser sign-in as themselves that reaches every workspace they can access. The SDK never sees the token. It handles paging, rate limits and retries, and gives typed access to the calls the application needs.</p>
+<ul class="checks">
+<li><b>Secrets stay off the command line.</b> The query text goes to the CLI as an argument. The variables, which carry secret values, go on standard input with <code>--variables @-</code>.</li>
+<li><b>The transport can be swapped</b> with <code>rw_client_set_transport()</code>. The unit tests use a mock transport, and also a fake CLI script to check the real transport.</li>
+</ul>
+
+<div class="callout"><strong class="t">What the audit uses</strong><p>The audit uses only the read calls: workspaces, projects, services, environments and variables. The write calls (<code>rw_upsert_variables</code> and <code>rw_redeploy_service</code>) are part of the SDK and are tested, but no program calls them.</p></div>
+
+<h2 id="assumed">What is documented and what is confirmed</h2>
+<div class="table-wrap"><table>
+<thead><tr><th>Call</th><th>Status</th></tr></thead>
+<tbody>
+<tr><td><code>rw_list_projects</code>, <code>rw_get_variables</code>, <code>rw_upsert_variables</code></td><td>Documented by Railway.</td></tr>
+<tr><td><code>rw_list_workspaces</code></td><td><b>Confirmed live</b> (2026-10-22): <code>me { workspaces { id name } }</code> returned both workspaces.</td></tr>
+<tr><td><code>rw_list_projects</code>, <code>rw_list_services</code>, <code>rw_list_environments</code> paging</td><td><b>Confirmed</b>: <code>first</code> and <code>after</code> exist in the live schema. A live project listing worked.</td></tr>
+<tr><td><code>rw_redeploy_service</code></td><td><b>Confirmed in the schema</b>: <code>serviceInstanceRedeploy</code> exists. It has not been called yet.</td></tr>
+</tbody></table></div>
+<div class="callout"><strong class="t">Still to check against real projects</strong><p>Reading variables in unrendered form, and the redeploy call itself, have not been run against your projects yet. If a call is wrong, it fails with an error. It does not return wrong data.</p></div>
+
+<h2 id="client">Client</h2>
+<div class="table-wrap"><table>
+<thead><tr><th>Function</th><th>What it does</th></tr></thead>
+<tbody>
+<tr><td><code>rw_client_new(token)</code></td><td>Creates a client. Pass NULL to use the CLI login. A token, if given, goes to the CLI through its environment only.</td></tr>
+<tr><td><code>rw_client_free(client)</code></td><td>Frees the client and wipes any token.</td></tr>
+<tr><td><code>rw_client_set_max_retries()</code></td><td>Retries for 429, 5xx and network errors. Default 5.</td></tr>
+<tr><td><code>rw_client_set_max_wait()</code></td><td>Longest single wait accepted after a 429, in seconds. Default 120.</td></tr>
+<tr><td><code>rw_client_get_request_count()</code></td><td>Requests sent so far, including retries.</td></tr>
+<tr><td><code>rw_client_get_rate_remaining()</code></td><td>Last <code>X-RateLimit-Remaining</code>, or -1. Always -1 through the CLI.</td></tr>
+<tr><td><code>rw_client_get_retry_after()</code></td><td>Last <code>Retry-After</code>, or -1. Always -1 through the CLI.</td></tr>
+<tr><td><code>rw_client_set_transport()</code>, <code>rw_client_set_sleep()</code>, <code>rw_client_set_endpoint()</code></td><td>Replace the HTTP call, the wait and the address. Used by the tests.</td></tr>
+<tr><td><code>rw_client_execute(client, query, variables, &amp;error)</code></td><td>Runs one GraphQL operation. Returns the <code>data</code> member, freed with <code>json_node_unref()</code>.</td></tr>
+</tbody></table></div>
+
+<h2 id="listing">Listing</h2>
+<p>These return a <code>GPtrArray</code> of <code>RwEntity</code> (an <code>id</code> and a <code>name</code>), freed with <code>g_ptr_array_unref()</code>. Pages of 100 are followed until none remain. If Railway reports another page without a new cursor, the call fails with <code>RW_ERROR_PARSE</code> rather than looping.</p>
+<ul class="checks">
+<li><code>rw_list_workspaces(client, &amp;error)</code></li>
+<li><code>rw_list_projects(client, workspace_id, &amp;error)</code>: one workspace at a time. Railway lists nothing useful without a workspace.</li>
+<li><code>rw_list_services(client, project_id, &amp;error)</code></li>
+<li><code>rw_list_environments(client, project_id, &amp;error)</code></li>
+</ul>
+
+<h2 id="variables">Variables</h2>
+<ul class="checks">
+<li><b><code>rw_get_variables(client, project, environment, service, unrendered, &amp;error)</code></b> returns a hash table of name to value. A NULL service means the shared variables of the environment. With <code>unrendered</code> set, references such as <code>${{Postgres.DATABASE_URL}}</code> come back as written.</li>
+<li><b><code>rw_upsert_variables(client, project, environment, service, table, skip_deploys, &amp;error)</code></b> writes the whole table in one request. A NULL service means shared variables. It <b>never replaces</b>: variables missing from the table are left alone. An empty table fails and sends nothing. Railway must answer true, or the call fails.</li>
+<li><b><code>rw_redeploy_service(client, service, environment, &amp;error)</code></b> redeploys a service in an environment so that it picks up changed variables. It uses <code>serviceInstanceRedeploy</code>, which redeploys what is already deployed. It avoids <code>serviceInstanceDeploy</code>, which can build the latest commit and change the code that runs.</li>
+<li><b><code>rw_variables_new()</code></b> makes a table whose values are wiped when it is freed. Use it to build the table for an upsert.</li>
+</ul>
+<div class="callout tip"><strong class="t">Write once per service</strong><p>Use one <code>rw_upsert_variables</code> call for each service and environment, with <code>skip_deploys</code> set. Then deploy once at the end. This keeps the request count low and stops containers redeploying on every write.</p></div>
+
+<h2 id="cli">The Railway CLI</h2>
+<div class="table-wrap"><table>
+<thead><tr><th>Function</th><th>What it does</th></tr></thead>
+<tbody>
+<tr><td><code>rw_cli_find()</code></td><td>The path of <code>railway</code>, or NULL if it is not on the path.</td></tr>
+<tr><td><code>rw_cli_set_program(path)</code></td><td>Use another program. For tests or a custom install.</td></tr>
+<tr><td><code>rw_cli_version(&amp;error)</code></td><td>The version text, such as <code>railway 5.52.1</code>.</td></tr>
+<tr><td><code>rw_cli_whoami(&amp;name, &amp;email, &amp;error)</code></td><td>Who is signed in. Fails with <code>RW_ERROR_AUTH</code> when nobody is.</td></tr>
+<tr><td><code>rw_cli_login(&amp;error)</code>, <code>rw_cli_logout(&amp;error)</code></td><td>Browser sign-in and sign-out. Login waits until it ends, so call it off the GUI thread.</td></tr>
+</tbody></table></div>
+<p>Tested with Railway CLI 5.52.1. If the CLI is missing, the error tells the user how to install it.</p>
+
+<h2 id="errors">Errors</h2>
+<p>Errors are returned in a <code>GError</code> with the domain <code>RW_ERROR</code>.</p>
+<div class="table-wrap"><table>
+<thead><tr><th>Code</th><th>Meaning</th></tr></thead>
+<tbody>
+<tr><td><code>RW_ERROR_INVALID</code></td><td>Bad arguments, such as an empty variable table.</td></tr>
+<tr><td><code>RW_ERROR_NETWORK</code></td><td>Railway could not be reached after the retries.</td></tr>
+<tr><td><code>RW_ERROR_HTTP</code></td><td>An unexpected HTTP status, such as a persistent 5xx.</td></tr>
+<tr><td><code>RW_ERROR_AUTH</code></td><td>HTTP 401 or 403, or a GraphQL error saying the request is not authorised.</td></tr>
+<tr><td><code>RW_ERROR_RATE_LIMITED</code></td><td>The quota is used up. Save progress and resume later.</td></tr>
+<tr><td><code>RW_ERROR_CLI</code></td><td>The Railway CLI is missing, could not be run, or failed in an unrecognised way. Not retried.</td></tr>
+<tr><td><code>RW_ERROR_GRAPHQL</code></td><td>Railway returned errors. The message is Railway&rsquo;s first error message.</td></tr>
+<tr><td><code>RW_ERROR_PARSE</code></td><td>The response was not the expected shape.</td></tr>
+</tbody></table></div>
+
+<h2 id="limits">Rate limits and retries</h2>
+<div class="table-wrap"><table>
+<thead><tr><th>Plan</th><th>Per hour</th><th>Per second</th></tr></thead>
+<tbody>
+<tr><td>Hobby</td><td>1,000</td><td>10</td></tr>
+<tr><td>Pro</td><td>10,000</td><td>50</td></tr>
+</tbody></table></div>
+<ul class="checks">
+<li>On HTTP 429 the client backs off and tries again. The CLI does not pass on <code>Retry-After</code>, so the wait is 1, 2, 4, 8 and 16 seconds.</li>
+<li>If the wait is longer than the maximum, or the retries run out, it fails with <code>RW_ERROR_RATE_LIMITED</code> so the caller can save its progress and resume later. Because the CLI gives no header, the tool counts its own requests to stay under the hourly quota.</li>
+<li>HTTP 5xx and network failures back off for 1, 2, 4, 8 and 16 seconds, then 30 seconds.</li>
+</ul>
+
+<h2 id="example">Example</h2>
+<pre><code>RwClient *client = rw_client_new(NULL);   /* uses the railway login */
+GError *error = NULL;
+GPtrArray *workspaces = rw_list_workspaces(client, &amp;error);
+
+if (workspaces == NULL) {
+    g_printerr("%s\n", error-&gt;message);
+    g_clear_error(&amp;error);
+} else {
+    for (guint i = 0; i &lt; workspaces-&gt;len; i++) {
+        RwEntity *w = workspaces-&gt;pdata[i];
+        g_print("%s  %s\n", w-&gt;id, w-&gt;name);
+    }
+    g_ptr_array_unref(workspaces);
+}
+rw_client_free(client);</code></pre>
+
+<h2 id="engine">The engine (rvcore)</h2>
+<p>The engine sits on top of the SDK and is what the audit window and the audit command use. Header <code>rvcore.h</code>, library <code>librvcore.a</code>, man page <code>rvcore(3)</code>. It uses the prefix <code>rv_</code>. Calls block, so run them off the GUI thread.</p>
+<h3>What the audit uses</h3>
+<div class="table-wrap"><table>
+<thead><tr><th>Step</th><th>Functions</th><th>What it does</th></tr></thead>
+<tbody>
+<tr><td>Discover and read</td><td><code>rv_discover</code>, <code>rv_topology_estimate</code>, <code>rv_read_variables</code></td><td>Lists workspaces, projects, environments and services, says how many requests reading will need, then reads every variable (unrendered). A project that cannot be read is dropped completely and reported as failed. Anything skipped or failed makes the inventory incomplete.</td></tr>
+<tr><td>Classify</td><td><code>rv_classify</code></td><td>Sets the category and the reason of every variable. Only a hint for the reader. See <a href="how-it-works.html#categories">the categories</a>.</td></tr>
+<tr><td>Write</td><td><code>rv_audit_save</code>, <code>rv_write_audit</code>, <code>rv_audit_default_folder</code></td><td>Makes a run folder (owner only) and writes one file, <code>audit.csv</code> (owner only, holds values). <code>rv_audit_default_folder</code> gives the Desktop, or the home folder if there is none. The window and the command line both call these, so they cannot differ.</td></tr>
+<tr><td>Policy</td><td><code>rv_policy_load</code>, <code>rv_policy_skip_workspace</code></td><td>Remembers workspaces to skip, and extra names that mark a database credential or an internal secret.</td></tr>
+</tbody></table></div>
+<h3>What is set aside</h3>
+<p>The engine also holds code for planning a rotation, staging new values, deploying, undoing, and changing database role passwords through a secure tunnel (<code>rv_plan_build</code>, <code>rv_run_stage</code>, <code>rv_run_deploy</code>, <code>rv_undo_run</code>, <code>rv_run_roles</code> and their helpers). It was written and tested, then set aside because rotating by machine proved too complex to trust during an incident. <b>No program uses it, it is not installed as a feature, and it is not documented as one.</b> Its tests still run, so it stays in working order if it is needed again.</p>
+<p>Errors use the domain <code>RV_ERROR</code>. Railway errors keep the domain <code>RW_ERROR</code>.</p>
+
+<h2 id="testing">Testing</h2>
+<p>The SDK has 31 unit tests. They replace the transport with canned responses, and some use a fake <code>railway</code> script that records how it was called, to prove that secret values go on standard input and never in the arguments.</p>
+<p>The engine has unit tests that run against a fake, in-memory Railway. For the audit they cover scanning, classifying, a project that fails, the audit file (a value with a comma, a quote and a line break must come back exactly, and the file must be owner only) and the run folder. The same suite still tests the set aside rotation code.</p>
+<p>The audit command has an end to end test: a fake <code>railway</code> program with invented data for two workspaces. It checks that only <code>audit.csv</code> is written, that it is mode 0600, that a tricky value survives, and that no value reaches the terminal. Both suites were also run under valgrind with no leaks.</p>
+<p>One more check needs Docker: <code>meson test --suite live</code> starts a throwaway PostgreSQL and runs the set aside database code against it. None of the unit tests touch the live API, and none may.</p>
+
+<nav class="pager" aria-label="Page navigation"><a class="prev" href="checklist.html"><small>Previous</small><b>Checklist</b></a><a class="next" href="building.html"><small>Next</small><b>Building</b></a></nav>
+</article>
+<aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li><a href="#overview">Overview</a></li><li><a href="#assumed">Documented and confirmed</a></li><li><a href="#client">Client</a></li><li><a href="#listing">Listing</a></li><li><a href="#variables">Variables</a></li><li><a href="#cli">The Railway CLI</a></li><li><a href="#errors">Errors</a></li><li><a href="#limits">Rate limits</a></li><li><a href="#example">Example</a></li><li><a href="#engine">The engine</a></li><li><a href="#testing">Testing</a></li></ul></aside>
+</div>
+</main>
+<footer class="site-footer">
+<div class="wrap">
+<div class="cols">
+<div><a class="brand" href="index.html" aria-label="Wexford House Railway Variable Auditor - home"><img src="assets/img/favicon.svg" alt="" width="38" height="38"><span><b>Wexford House</b><small>Railway Variable Auditor</small></span></a>
+<p style="margin-top:18px;max-width:34ch">Lists every environment variable, with its value, in every Railway workspace you can reach, in one CSV file.</p></div>
+<div><h4>Guides</h4><ul><li><a href="index.html">Overview</a></li><li><a href="how-it-works.html">How it works</a></li><li><a href="checklist.html">Checklist</a></li><li><a href="sdk.html">SDK reference</a></li><li><a href="building.html">Building</a></li><li><a href="windows.html">Windows</a></li><li><a href="security.html">Security</a></li></ul></div>
+<div><h4>Reference</h4><ul><li><a href="sdk.html">SDK reference</a></li><li><a href="https://docs.railway.com/integrations/api">Railway API documentation</a></li></ul></div>
+</div>
+<p class="legal">&copy; Wexford House. Licensed under the GNU General Public Licence, version 3. Man pages: <code>railway-variable-auditor(1)</code>, <code>railway-variable-audit(1)</code>, <code>railway-variable-auditor-csv(5)</code>, <code>railway(3)</code>, <code>rvcore(3)</code>. Screenshots show demonstration data.</p>
+</div>
+</footer>
+</body>
+</html>

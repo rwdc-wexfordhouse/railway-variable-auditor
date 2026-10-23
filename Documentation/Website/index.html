@@ -1,0 +1,120 @@
+<!--
+  Copyright (c) 2026, Ross WD Cameron <ross@wexfordhouse.co.za>
+  Copyright (c) 2026, Wexford House <https://wexfordhouse.co.za/>
+-->
+<!doctype html>
+<html lang="en-ZA">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Overview | Wexford House Railway Variable Auditor</title>
+<meta name="description" content="Railway Variable Auditor signs in to Railway, finds every workspace you can access, and writes every environment variable with its value to one CSV file, so you can rotate your keys after the security disclosure of 21 October 2026.">
+<meta name="theme-color" content="#0a1f35">
+<link rel="icon" href="assets/img/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="site-header">
+<div class="wrap">
+<a class="brand" href="index.html" aria-label="Wexford House Railway Variable Auditor - home"><img src="assets/img/favicon.svg" alt="" width="38" height="38"><span><b>Wexford House</b><small>Railway Variable Auditor</small></span></a>
+<input type="checkbox" id="nav-toggle" class="nav-toggle" aria-label="Toggle navigation menu">
+<label for="nav-toggle" class="nav-button" aria-hidden="true"><span></span><span></span><span></span></label>
+<nav class="site-nav" aria-label="Main"><a href="index.html" aria-current="page">Overview</a><a href="how-it-works.html">How it works</a><a href="checklist.html">Checklist</a><a href="sdk.html">SDK reference</a><a href="building.html">Building</a><a href="windows.html">Windows</a><a href="security.html">Security</a></nav>
+</div>
+</header>
+<main id="main">
+
+<section class="hero">
+<div class="wrap">
+<span class="eyebrow">Incident response tool</span>
+<h1>Every Railway variable, in one file.</h1>
+<p class="lead">On 21 October 2026 Railway disclosed that an unauthorised third party may have accessed encrypted environment variables and, for some of them, obtained the decrypted contents. Railway Variable Auditor helps you respond. It signs in to Railway, finds every workspace you can access, reads every variable on every service, and writes them, with their current values, to one CSV file. Then you work your way through it. Read <a href="https://blog.railway.com/p/security-disclosure-wednesday-october-21st" style="color:#d9bd86">Railway&rsquo;s disclosure</a> first.</p>
+<div class="hero-actions">
+<a class="btn btn-gold" href="how-it-works.html">How it works</a>
+<a class="btn btn-ghost" href="checklist.html">Checklist</a>
+</div>
+</div>
+</section>
+
+<section class="section">
+<div class="wrap">
+<div class="callout"><strong class="t">What is built</strong><p>The audit window and the audit command are written and tested against a fake Railway. <b>They have not yet been run on the author&rsquo;s live account. Run one yourself and check the result.</b> The tool only reads. It never changes anything in Railway. It was called Railway Variable Cycler before it became an audit tool.</p></div>
+<div class="section-head">
+<span class="eyebrow">At a glance</span>
+<h2>One job: show you everything.</h2>
+<p class="lead">Rotating by machine proved too complex to trust during an incident. The tool now does the part that is safe and certain: finding and listing every variable, so nothing is missed.</p>
+</div>
+<div class="grid cols-2">
+<a class="card" href="how-it-works.html#scope"><span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 12a8 8 0 0 1 14-5.3M20 12a8 8 0 0 1-14 5.3M18 3v4h-4M6 21v-4h4"/></svg></span><h3>Every workspace, automatically</h3><p>One sign-in with the Railway CLI reaches every workspace you can access. You never pick them one at a time.</p><span class="more">Read more &rarr;</span></a>
+<a class="card" href="how-it-works.html#results"><span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M6 3h9l4 4v14H6z"/><path d="M14 3v5h5M9 13h6M9 17h6"/></svg></span><h3>One CSV, with the values</h3><p>Workspace, project, environment, service, variable, value, and a category to help you sort. Readable by you only.</p><span class="more">Read more &rarr;</span></a>
+<a class="card" href="how-it-works.html#reading"><span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="6.5" rx="2"/><rect x="3" y="13.5" width="18" height="6.5" rx="2"/><path d="M7 7.2h.01M7 16.8h.01"/></svg></span><h3>Only reads, never hides a gap</h3><p>Nothing is written to Railway. A workspace or project that cannot be read is named, with the reason, and the rest carries on.</p><span class="more">Read more &rarr;</span></a>
+<a class="card" href="checklist.html"><span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg></span><h3>A checklist for the rest</h3><p>Databases, buckets, GitHub, registry credentials, third party keys and logs, with links to Railway&rsquo;s own posts.</p><span class="more">See the checklist &rarr;</span></a>
+</div>
+</div>
+</section>
+
+<section class="section alt">
+<div class="wrap">
+<div class="section-head">
+<span class="eyebrow">What exists today</span>
+<h2>Built, and still to build.</h2>
+</div>
+<div class="table-wrap"><table>
+<thead><tr><th>Part</th><th>State</th><th>Where</th></tr></thead>
+<tbody>
+<tr><td>Audit window (GTK 4)</td><td><b>Builds and runs.</b> Driven end to end on demonstration data in a headless compositor. Not yet used on a real screen with a real account.</td><td><a href="how-it-works.html#tour">Tour</a>, <code>railway-variable-auditor(1)</code></td></tr>
+<tr><td>Audit command</td><td><b>Built and tested</b> against a fake Railway CLI, including file permissions and that no value reaches the terminal. Not yet run on a live account.</td><td><a href="how-it-works.html#command">The command line</a>, <code>railway-variable-audit(1)</code></td></tr>
+<tr><td>Railway SDK in C11</td><td><b>Built and tested</b> (31 unit tests, no network)</td><td><a href="sdk.html">SDK reference</a>, <code>railway(3)</code></td></tr>
+<tr><td>Engine pieces the audit uses: discover, read, classify, write CSV</td><td><b>Built and tested</b> against a fake Railway.</td><td><a href="sdk.html#engine">The engine</a>, <code>rvcore(3)</code></td></tr>
+<tr><td>Rotating, staging, deploying, undo, database passwords</td><td><b>Set aside.</b> The code is still in the source tree and its tests still run, but no program uses it.</td><td><a href="sdk.html#engine">The engine</a></td></tr>
+<tr><td>Windows 11 setup program</td><td><b>Built.</b> Installed, run and uninstalled under Wine only. Not run on Windows 11. Not code signed.</td><td><a href="windows.html">Windows</a></td></tr>
+<tr><td>macOS</td><td>Not tried</td><td><a href="building.html">Building</a></td></tr>
+<tr><td>Live API checks</td><td>Workspaces and paging checked. Reading variables of real projects not yet checked.</td><td><a href="sdk.html#assumed">Documented and confirmed</a></td></tr>
+</tbody></table></div>
+</div>
+</section>
+
+<section class="section">
+<div class="wrap">
+<div class="section-head">
+<span class="eyebrow">Take a tour</span>
+<h2>See it in action.</h2>
+<p class="lead">Every screenshot comes from the real window, on invented demonstration data.</p>
+</div>
+<div class="grid cols-3">
+<a class="card has-thumb" href="how-it-works.html#tour"><div class="thumb"><img src="assets/img/app/01-start.png" width="1600" height="1600" alt="The start screen with the buttons Sign in with Railway and Audit all my workspaces." loading="lazy" decoding="async"></div><h3>Sign in, then audit</h3><p>Two buttons and a folder to save in.</p><span class="more">Take the tour &rarr;</span></a>
+<a class="card has-thumb" href="how-it-works.html#tour"><div class="thumb"><img src="assets/img/app/03-results.png" width="1600" height="1600" alt="The results screen showing how many variables were read and where the files were saved." loading="lazy" decoding="async"></div><h3>What was read</h3><p>The counts, the folder, and a reminder that the file holds live secrets.</p><span class="more">Take the tour &rarr;</span></a>
+<a class="card has-thumb" href="how-it-works.html#tour"><div class="thumb"><img src="assets/img/app/04-results-incomplete.png" width="1600" height="1600" alt="The results screen naming a project that could not be read, with the reason." loading="lazy" decoding="async"></div><h3>Honest about gaps</h3><p>Anything that could not be read is named, with the reason.</p><span class="more">Take the tour &rarr;</span></a>
+</div>
+</div>
+</section>
+
+<section class="section alt">
+<div class="wrap">
+<div class="section-head">
+<span class="eyebrow">Find your way</span>
+<h2>Where to start.</h2>
+</div>
+<div class="grid cols-2">
+<a class="card" href="how-it-works.html"><h3>Administrators</h3><p>What the audit reads, the file it writes, and how to work through it.</p><span class="more">How it works &rarr;</span></a>
+<a class="card" href="security.html"><h3>Security reviewers</h3><p>How the login and the values are handled, and how to look after the audit file.</p><span class="more">Security &rarr;</span></a>
+<a class="card" href="sdk.html"><h3>Developers</h3><p>Every function, error code and rate limit rule in the Railway SDK.</p><span class="more">SDK reference &rarr;</span></a>
+<a class="card" href="building.html"><h3>Builders</h3><p>Dependencies and commands to build and test on Linux, macOS and Windows.</p><span class="more">Building &rarr;</span></a>
+</div>
+</div>
+</section>
+</main>
+<footer class="site-footer">
+<div class="wrap">
+<div class="cols">
+<div><a class="brand" href="index.html" aria-label="Wexford House Railway Variable Auditor - home"><img src="assets/img/favicon.svg" alt="" width="38" height="38"><span><b>Wexford House</b><small>Railway Variable Auditor</small></span></a>
+<p style="margin-top:18px;max-width:34ch">Lists every environment variable, with its value, in every Railway workspace you can reach, in one CSV file.</p></div>
+<div><h4>Guides</h4><ul><li><a href="index.html">Overview</a></li><li><a href="how-it-works.html">How it works</a></li><li><a href="checklist.html">Checklist</a></li><li><a href="sdk.html">SDK reference</a></li><li><a href="building.html">Building</a></li><li><a href="windows.html">Windows</a></li><li><a href="security.html">Security</a></li></ul></div>
+<div><h4>Reference</h4><ul><li><a href="sdk.html">SDK reference</a></li><li><a href="https://docs.railway.com/integrations/api">Railway API documentation</a></li></ul></div>
+</div>
+<p class="legal">&copy; Wexford House. Licensed under the GNU General Public Licence, version 3. Man pages: <code>railway-variable-auditor(1)</code>, <code>railway-variable-audit(1)</code>, <code>railway-variable-auditor-csv(5)</code>, <code>railway(3)</code>, <code>rvcore(3)</code>. Screenshots show demonstration data.</p>
+</div>
+</footer>
+</body>
+</html>

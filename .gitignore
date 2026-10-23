@@ -1,0 +1,18 @@
+# Build output and packages
+/build*/
+/Packaging/dist/
+*.rpm
+*.o
+*.exe
+
+# Windows cross-build cache and output
+/windows-*/
+
+# Audit and run output (live secrets)
+audit.csv
+changes.csv
+run-*/
+
+# Editor and Python
+__pycache__/
+*.swp

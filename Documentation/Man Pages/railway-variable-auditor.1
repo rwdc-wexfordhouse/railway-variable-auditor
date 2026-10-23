@@ -1,0 +1,106 @@
+.\" Copyright (c) 2026, Wexford House <https://wexfordhouse.co.za/>
+.\" Copyright (c) 2026, Ross Cameron <ross@wexfordhouse.co.za>
+.\" Licensed under the GNU General Public License, version 3.
+.TH RAILWAY-VARIABLE-AUDITOR 1 "October 2026" "Railway Variable Auditor 0.1.0" "User Commands"
+.SH NAME
+railway-variable-auditor \- write every Railway environment variable, with its value, to one CSV file
+.SH SYNOPSIS
+.B railway-variable-auditor
+.SH STATUS
+The window builds, and the engine and Railway SDK it uses are tested. The window has been driven end to end on invented demonstration data in a headless compositor, but not yet used on a real screen with a real account. macOS and Windows have not been tried. Report problems.
+.SH DESCRIPTION
+.B railway-variable-auditor
+is a graphical program. The Railway CLI must be installed. An administrator signs in with the Railway CLI (a browser sign-in as themselves), and the program never sees the token. The program then finds
+.B all
+workspaces that administrator can access, reads every variable of every service and environment in every project, and writes them, with their current values, to one CSV file,
+.IR audit.csv .
+The administrator works through that file to rotate the keys by hand.
+.PP
+It was written in response to Railway's security disclosure of 21 October 2026, which says an unauthorised third party "may have accessed encrypted environment variables and, for some of them, obtained the decrypted contents". Every value must be treated as possibly exposed.
+.PP
+The program only reads. It never writes to Railway and never redeploys anything. It never shows a variable value on screen. The same audit is available without a window as
+.BR railway-variable-audit (1).
+.PP
+Planning, staging and deploying new values, undo, and changing database role passwords were started and then set aside. The code is still in the source tree, but this program does not use it.
+.SH SCREENS
+There are three screens. Work runs in a separate thread, so the window never freezes.
+.TP
+.B Start
+Shows whether the Railway CLI is installed and who is signed in.
+.B "Sign in with Railway"
+opens the browser through the CLI.
+.B Choose
+picks the folder that the run folder is made in (the default is your Desktop).
+.B "Audit all my workspaces"
+starts the audit.
+.TP
+.B Reading
+A progress bar and a line saying what is being read. Railway limits requests per hour (1,000 on Hobby, 10,000 on Pro), so a large account takes a while.
+.B Cancel
+stops at the next safe point and writes nothing. Closing the window while it runs is refused until it stops.
+.TP
+.B Results
+How many variables, workspaces, projects, environments and services were read, every workspace or project that was skipped or failed (with the reason), the folder the file was saved to, and a reminder that
+.I audit.csv
+holds live secrets.
+.B "Open the folder"
+shows the file.
+.B "Audit again"
+goes back to the start.
+.SH WINDOWS
+A Windows 11 build is made by cross-compiling on Linux (see the website page "Windows"). It is installed for the current user only, by a setup program, with no administrator rights. It has been run under Wine only, not on Windows 11, and the setup program is not code signed.
+.PP
+The program behaves as described above, with these differences. The Railway CLI is not installed by Setup: install it separately (for example
+.BR "npm i -g @railway/cli" ).
+The run folder goes on the Desktop of the signed-in user, and
+.I audit.csv
+is restricted to that user with an access list.
+.SH AUTOMATION BUILD
+A build made with the Meson option
+.B \-Dautomation=true
+adds two options, for the documentation. A normal build does not have them.
+.TP
+.B \-\-demo
+Use invented demonstration data. Nothing is read from Railway or sent to it, the Railway CLI is not run, the policy file is not read or changed, and files go to a temporary folder.
+.TP
+.BI \-\-screenshots " DIR"
+Implies
+.BR \-\-demo .
+Drives every screen by itself, saves a PNG of each in
+.IR DIR ,
+and quits. Used by
+.IR Source/Tools/make-screenshots.sh ,
+which runs it inside a private headless compositor so nothing appears on the screen.
+.SH FILES
+Each audit creates a folder
+.I run-YYYYMMDD-HHMMSS
+(UTC, owner only) in the chosen folder. See
+.BR railway-variable-auditor-csv (5).
+.TP
+.I audit.csv
+Every variable with its value, category and reason. Contains live secrets. Owner only (mode 0600). Delete it when you have finished.
+.TP
+.I policy.ini
+In the user configuration folder (for example
+.IR ~/.config/railway-variable-auditor/ ).
+Workspaces to skip, and extra credential and internal secret names. Used for the category column.
+.SH ENVIRONMENT
+.TP
+.B RVC_RAILWAY_CLI
+The path of the Railway CLI program, when it is not on the path.
+.SH EXIT STATUS
+The program is a window and exits with 0 when it is closed. For scripts, use
+.BR railway-variable-audit (1).
+.SH SECURITY
+The program does not handle the Railway token. The Railway CLI holds it, and the program never reads the CLI configuration file. Requests go through the CLI, which uses TLS with certificate checking. Values are never shown on screen, printed, or put in a report. They are written only to
+.IR audit.csv ,
+which is owner only. Treat that file as the most sensitive file you have: store it on an encrypted disk, do not email it, and delete it when you have finished.
+.SH BUGS
+The window has not yet been used on a real screen with a real account. Reading a service in an environment where it does not exist may be reported as a failed project. Leaving a workspace out is done by editing the policy file, because there is no screen for it yet. A variable that Railway hides from the API (a sealed variable) appears with an empty value.
+.SH SEE ALSO
+.BR railway-variable-audit (1),
+.BR railway-variable-auditor-csv (5),
+.BR rvcore (3),
+.BR railway (3)
+.SH AUTHORS
+Ross Cameron <ross@wexfordhouse.co.za>, Wexford House.

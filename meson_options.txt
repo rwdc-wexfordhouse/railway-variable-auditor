@@ -1,0 +1,6 @@
+option('automation', type : 'boolean', value : false,
+  description : 'Build the application with a demo mode (invented data, no Railway) and a screenshot driver, for the documentation')
+option('tests', type : 'boolean', value : true,
+  description : 'Build the test programs. The Windows cross build turns this off (it cannot run them)')
+option('windows_icon', type : 'string', value : '',
+  description : 'Path of the .ico file for the Windows programs (set by the Makefile)')

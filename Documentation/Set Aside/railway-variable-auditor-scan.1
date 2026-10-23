@@ -1,0 +1,69 @@
+.\" Copyright (c) 2026, Wexford House <https://wexfordhouse.co.za/>
+.\" Copyright (c) 2026, Ross Cameron <ross@wexfordhouse.co.za>
+.\" Licensed under the GNU General Public License, version 3.
+.TH RAILWAY-VARIABLE-AUDITOR-SCAN 1 "October 2026" "Railway Variable Auditor 0.1.0" "User Commands"
+.SH NAME
+railway-variable-auditor-scan \- read only inventory of every Railway variable
+.SH SYNOPSIS
+.B railway-variable-auditor-scan
+.RB [ \-\-out
+.IR FOLDER ]
+.RB [ \-\-policy
+.IR FILE ]
+.br
+.B railway-variable-auditor-scan \-\-help
+.SH DESCRIPTION
+Signs in through the Railway CLI, reads every variable in every workspace you can access, classifies them, and writes
+.I not-changed.csv
+and
+.I run-report.csv
+to a new run folder. It prints a summary of how many variables fall in each group, and lists the shared secrets and the database roles the tool could rotate (names only, no passwords). It does not open a tunnel or touch any database.
+.PP
+It is read only. It never writes to Railway, and it never prints or saves a variable value. Use it to inventory before rotating, and to get your checklist of what to rotate by hand.
+.PP
+Sign in first with
+.BR "railway login" .
+.SH OPTIONS
+.TP
+.BI \-\-out " FOLDER"
+Where to create the run folder
+.RI ( run-YYYYMMDD-HHMMSS ).
+The default is the current folder.
+.TP
+.BI \-\-policy " FILE"
+The policy file. The default is
+.I policy.ini
+in the user configuration folder.
+.TP
+.B \-\-help
+Show the usage and exit.
+.SH EXIT STATUS
+.TP
+.B 0
+The scan was complete.
+.TP
+.B 1
+Some workspaces or projects were skipped or failed. See
+.IR run-report.csv .
+.TP
+.B 2
+The scan could not start: the Railway CLI is missing, nobody is signed in, or a file could not be written.
+.SH FILES
+.TP
+.I not-changed.csv
+Every variable, with its group and the reason. No values. This is your checklist. Unlike the application, the scan also lists the shared secrets the program could rotate (group \fBshared\fR), because nothing is being changed.
+.TP
+.I run-report.csv
+The status of every workspace and project.
+.PP
+See
+.BR railway-variable-auditor-csv (5).
+.SH SECURITY
+Requests go through the Railway CLI. The program does not handle your token. Reading variables means the values pass through the program's memory, and they are overwritten when freed, but they are never printed or written.
+.SH SEE ALSO
+.BR railway-variable-audit (1),
+.BR railway-variable-auditor (1),
+.BR railway-variable-auditor-csv (5),
+.BR rvcore (3)
+.SH AUTHORS
+Ross Cameron <ross@wexfordhouse.co.za>, Wexford House.

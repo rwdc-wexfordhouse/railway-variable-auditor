@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Name=Railway Variable Auditor
+GenericName=Railway secret rotation
+Comment=Rotate the environment variables that your Railway containers share
+Exec=railway-variable-auditor
+Icon=za.co.wexfordhouse.RailwayVariableAuditor
+Terminal=false
+Categories=System;Security;GTK;
+Keywords=railway;secrets;environment;variables;rotate;
+StartupNotify=true

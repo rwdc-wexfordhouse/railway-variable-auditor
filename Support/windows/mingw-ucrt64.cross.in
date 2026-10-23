@@ -1,0 +1,25 @@
+# Meson cross file for Windows (x86_64). @SYSROOT@ is replaced by the Makefile.
+# The compiler is the Rocky/EPEL mingw64 GCC. Headers, import libraries and
+# runtime DLLs for GTK 4, json-glib and zlib come from the pinned
+# MSYS2 UCRT64 packages unpacked into the sysroot (see Support/windows/fetch-msys2.py).
+
+[binaries]
+c = 'x86_64-w64-mingw32-gcc'
+ar = 'x86_64-w64-mingw32-ar'
+strip = 'x86_64-w64-mingw32-strip'
+windres = 'x86_64-w64-mingw32-windres'
+pkg-config = 'pkg-config'
+
+[host_machine]
+system = 'windows'
+cpu_family = 'x86_64'
+cpu = 'x86_64'
+endian = 'little'
+
+[properties]
+sys_root = '@SYSROOT@'
+pkg_config_libdir = ['@SYSROOT@/ucrt64/lib/pkgconfig', '@SYSROOT@/ucrt64/share/pkgconfig']
+
+[built-in options]
+c_args = ['-D_WIN32_WINNT=0x0A00', '-DWINVER=0x0A00']
+c_link_args = ['-static-libgcc']

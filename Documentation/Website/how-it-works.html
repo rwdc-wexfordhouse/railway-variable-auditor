@@ -1,0 +1,151 @@
+<!--
+  Copyright (c) 2026, Ross WD Cameron <ross@wexfordhouse.co.za>
+  Copyright (c) 2026, Wexford House <https://wexfordhouse.co.za/>
+-->
+<!doctype html>
+<html lang="en-ZA">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>How it works | Wexford House Railway Variable Auditor</title>
+<meta name="description" content="What the Railway Variable Auditor audit reads, the CSV file it writes, and how to work through it.">
+<meta name="theme-color" content="#0a1f35">
+<link rel="icon" href="assets/img/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="site-header">
+<div class="wrap">
+<a class="brand" href="index.html" aria-label="Wexford House Railway Variable Auditor - home"><img src="assets/img/favicon.svg" alt="" width="38" height="38"><span><b>Wexford House</b><small>Railway Variable Auditor</small></span></a>
+<input type="checkbox" id="nav-toggle" class="nav-toggle" aria-label="Toggle navigation menu">
+<label for="nav-toggle" class="nav-button" aria-hidden="true"><span></span><span></span><span></span></label>
+<nav class="site-nav" aria-label="Main"><a href="index.html">Overview</a><a href="how-it-works.html" aria-current="page">How it works</a><a href="checklist.html">Checklist</a><a href="sdk.html">SDK reference</a><a href="building.html">Building</a><a href="windows.html">Windows</a><a href="security.html">Security</a></nav>
+</div>
+</header>
+<main id="main">
+<section class="page-head"><div class="wrap">
+<div class="crumbs"><a href="index.html">Overview</a> &nbsp;/&nbsp; How it works</div>
+<span class="eyebrow">For administrators</span>
+<h1>How it works</h1>
+<p class="lead">What the audit reads, the files it writes, and how to work through them.</p>
+</div></section>
+<div class="wrap doc">
+<article>
+<div class="callout"><strong class="t">What is built</strong><p>The audit is built: the window and the command line program both sign in through the Railway CLI, find every workspace you can access, and write every variable with its value to one CSV file. It is tested against a fake Railway CLI and a fake Railway. <b>It has not yet been run on the author&rsquo;s live account. Run it yourself and check the result.</b> Rotating variables, staging, deploying and undo were started and then set aside: the code is still in the source tree, but no program uses it and it is not documented as a feature.</p></div>
+
+<h2 id="why">Why this exists</h2>
+<p>On 21 October 2026 Railway disclosed that an unauthorised third party &ldquo;may have accessed encrypted environment variables and, for some of them, obtained the decrypted contents&rdquo;. Railway says the impact may be limited to a subset of users, and recommends that everyone acts. Read <a href="https://blog.railway.com/p/security-disclosure-wednesday-october-21st">Railway&rsquo;s disclosure</a>. Treat every variable value as possibly exposed.</p>
+<p>Railway advises rolling every environment variable. To do that you first need to know what you have. This tool gives you the whole list, in one file, so you can work through it.</p>
+<h3 id="advice">Railway&rsquo;s advice, and what this tool covers</h3>
+<div class="table-wrap"><table>
+<thead><tr><th>Railway advises</th><th>This tool</th></tr></thead>
+<tbody>
+<tr><td>Roll all environment variables, including API keys.</td><td><b>Lists</b> every variable, with its current value, in every workspace you can access. You rotate each one yourself.</td></tr>
+<tr><td>Rotate database credentials (Regenerate on the database service).</td><td><b>Does not change them.</b> Marks them as <code>database-credential</code>, including pasted copies. See the <a href="checklist.html#databases">checklist</a>.</td></tr>
+<tr><td>Roll any private registry credentials.</td><td><b>Cannot.</b> They are not variables. Do this by hand at Railway.</td></tr>
+<tr><td>Review logs for unusual activity.</td><td><b>Cannot.</b> Do this by hand. The <a href="checklist.html">checklist</a> lists every manual step with links to Railway&rsquo;s posts.</td></tr>
+</tbody></table></div>
+
+<h2 id="scope">Which workspaces it covers</h2>
+<ul class="checks">
+<li><b>All of them.</b> The tool works through every workspace the signed-in administrator can access, and within each one every project, environment and service. You do not pick them one at a time.</li>
+<li><b>You can leave workspaces out.</b> Add their ids to <code>skip_workspaces</code> in the policy file. A skipped workspace is reported, so the audit is marked incomplete.</li>
+<li><b>You sign in with the Railway CLI.</b> The tool needs the Railway CLI and runs <code>railway login</code>, a browser sign-in as yourself. That one login reaches every workspace you can access. The tool never sees your token.</li>
+<li><b>Nothing fails silently.</b> A workspace where you lack permission is skipped and reported with the reason. A failure in one place never stops the rest.</li>
+</ul>
+
+<h2 id="start">Signing in and starting</h2>
+<ol class="steps">
+<li><h3>Sign in</h3><p>Press <span class="ui">Sign in with Railway</span>. The Railway CLI opens your browser. If you are already signed in, the status line says so. Railway invalidated all API tokens on 22 October 2026, so you will need to sign in again.</p></li>
+<li><h3>Choose where to save</h3><p>The file goes in a new folder named <code>run-YYYYMMDD-HHMMSS</code> inside the folder you choose. The default is your Desktop. The folder is readable by you only.</p></li>
+<li><h3>Audit</h3><p>Press <span class="ui">Audit all my workspaces</span>.</p></li>
+</ol>
+
+<h2 id="reading">What it reads</h2>
+<ul class="checks">
+<li><b>Every variable.</b> The variables of every service in every environment, and the shared variables of every environment.</li>
+<li><b>Only reads.</b> Nothing is written to Railway. Nothing is redeployed.</li>
+<li><b>Values as stored.</b> A reference such as <code>${Postgres.DATABASE_URL}</code> appears as written, not as its resolved value. A variable that Railway hides from the API (a sealed variable) appears with an empty value.</li>
+<li><b>Large accounts finish.</b> The tool follows every page of results. Railway allows 1,000 requests an hour on Hobby and 10,000 on Pro, and tells the tool nothing more, so the tool counts its own requests and slows down if Railway says it is going too fast. You can cancel at any time.</li>
+<li><b>A gap is never hidden.</b> If a workspace, project or environment cannot be read, the rest still go on. Every gap is shown on the results screen, with the reason.</li>
+</ul>
+
+<h2 id="results">The results</h2>
+<p>The audit writes one file into a new run folder on your Desktop.</p>
+<div class="table-wrap"><table>
+<thead><tr><th>File</th><th>Contents</th><th>Handle with care</th></tr></thead>
+<tbody>
+<tr><td><code>audit.csv</code></td><td>One row for every variable: workspace, project, environment, service (or <code>shared</code>), variable, value, category and reason.</td><td><b>Contains live secrets.</b> Readable by you only (mode 0600). Keep it safe and delete it when you have finished.</td></tr>
+</tbody></table></div>
+<p>The exact columns are in the man page <code>railway-variable-auditor-csv(5)</code>. Open <code>audit.csv</code> in a spreadsheet. Values that contain commas, quotes or line breaks are quoted, so they come through intact.</p>
+<div class="callout warn"><strong class="t">The audit file holds every secret in one place</strong><p>That is what makes it useful and what makes it dangerous. Store it on an encrypted disk, do not email it or put it in a shared folder, and delete it once you have rotated everything. The tool never prints a value to the terminal or to a log.</p></div>
+
+<h3 id="categories">The category column is a hint</h3>
+<p>The tool sorts every variable into a group, to help you decide what to do first. It is only an opinion. Nothing is changed because of it, and when it is unsure it says so.</p>
+<div class="table-wrap"><table>
+<thead><tr><th>Category</th><th>What it means</th><th>What you do</th></tr></thead>
+<tbody>
+<tr><td><b>ini-config</b></td><td>INI file content held in a variable. It often holds tokens for other systems such as Xero.</td><td>Renew the tokens with each system.</td></tr>
+<tr><td><b>database-role</b></td><td>The password of an application role of a Postgres service, found through a connection URL on the private network.</td><td>Change it in the database and in every variable that holds it.</td></tr>
+<tr><td><b>database-credential</b></td><td>A credential for a Railway database such as <code>PGPASSWORD</code> or <code>DATABASE_URL</code>, a connection URL with a password in it, or a pasted copy of one.</td><td>Use <b>Regenerate</b> on the database service. Replace pasted copies with references.</td></tr>
+<tr><td><b>internal-hostname</b></td><td>Names another container on the private network, such as <code>*.railway.internal</code>.</td><td>Nothing to rotate.</td></tr>
+<tr><td><b>reference</b></td><td>The whole value is one <code>${...}</code> reference.</td><td>Rotate the source variable.</td></tr>
+<tr><td><b>unshared</b></td><td>Used in one place only, or empty or unreadable (it may be sealed). Most likely an API key.</td><td>Rotate it with its provider.</td></tr>
+<tr><td><b>shared-config</b></td><td>The same value in more than one place, but it does not look like a secret, such as <code>NODE_ENV</code>.</td><td>Nothing to rotate.</td></tr>
+<tr><td><b>shared-manual</b></td><td>A shared secret that looks like a key from another provider.</td><td>Rotate it with its provider, then update every place that uses it.</td></tr>
+<tr><td><b>shared</b></td><td>A shared secret with an internal secret name (<code>SECRET</code>, <code>SALT</code>, <code>PEPPER</code>, <code>SESSION</code>, <code>COOKIE</code> and similar), in a format that can be reproduced.</td><td>Make one new value and set it everywhere it is used.</td></tr>
+</tbody></table></div>
+<p>&ldquo;Shared&rdquo; means the same value anywhere in the audit: in two services, two projects or two workspaces. When you change a shared secret, change it everywhere at once, or the places will disagree.</p>
+
+<h2 id="working">Working through the file</h2>
+<ol class="steps">
+<li><h3>Check the gaps</h3><p>Read the results screen. Anything not read is not in <code>audit.csv</code>, and a secret shared with an unread place may look unshared.</p></li>
+<li><h3>Sort by category and by value</h3><p>Sorting by the <code>value</code> column puts the places that share a secret next to each other.</p></li>
+<li><h3>Rotate at the source</h3><p>Follow the <a href="checklist.html">checklist</a>: databases first (Regenerate), then buckets, GitHub and registry credentials, then every third party key.</p></li>
+<li><h3>Update Railway</h3><p>Set the new value in every variable that held the old one, then redeploy every service that uses it. Containers read variables only at startup.</p></li>
+<li><h3>Run the audit again</h3><p>Compare the new file with the old one to find anything you missed. Then delete both files.</p></li>
+</ol>
+
+<h2 id="tour">A tour of the window</h2>
+<p>These screenshots are taken from the real window, on invented demonstration data. They were made by the program itself (see <a href="building.html#screenshots">Taking the screenshots</a>), so they stay true to the window. Click one to enlarge it.</p>
+<div class="shots-2">
+<figure class="shot"><div class="frame"><a class="zoom" href="#zoom-app-01-start" title="Click to enlarge" aria-label="Enlarge this screenshot"><img src="assets/img/app/01-start.png" width="1600" height="1600" alt="The start screen: a heading, a short description, a status line saying who is signed in, a folder to save in with a Choose button, and the buttons Sign in with Railway and Audit all my workspaces." loading="lazy" decoding="async"></a></div><figcaption><b>Start.</b> Sign in, choose where to save, then press <b>Audit all my workspaces</b>.</figcaption></figure><div class="lightbox" id="zoom-app-01-start" role="dialog" aria-label="Enlarged screenshot"><a class="lb-link" href="#close" aria-label="Close enlarged screenshot"><img src="assets/img/app/01-start.png" width="1600" height="1600" alt="The start screen: a heading, a short description, a status line saying who is signed in, a folder to save in with a Choose button, and the buttons Sign in with Railway and Audit all my workspaces." loading="lazy" decoding="async"></a><a class="lb-close" href="#close" aria-label="Close">&times;</a></div>
+<figure class="shot"><div class="frame"><a class="zoom" href="#zoom-app-02-working" title="Click to enlarge" aria-label="Enlarge this screenshot"><img src="assets/img/app/02-working.png" width="1600" height="1600" alt="The working screen: a progress bar, a line saying which workspace is being listed, a note that nothing is changed in Railway, and a Cancel button." loading="lazy" decoding="async"></a></div><figcaption><b>Reading.</b> The progress bar and the line under it show which workspace is being read. Cancel stops at the next safe point.</figcaption></figure><div class="lightbox" id="zoom-app-02-working" role="dialog" aria-label="Enlarged screenshot"><a class="lb-link" href="#close" aria-label="Close enlarged screenshot"><img src="assets/img/app/02-working.png" width="1600" height="1600" alt="The working screen: a progress bar, a line saying which workspace is being listed, a note that nothing is changed in Railway, and a Cancel button." loading="lazy" decoding="async"></a><a class="lb-close" href="#close" aria-label="Close">&times;</a></div>
+<figure class="shot"><div class="frame"><a class="zoom" href="#zoom-app-03-results" title="Click to enlarge" aria-label="Enlarge this screenshot"><img src="assets/img/app/03-results.png" width="1600" height="1600" alt="The results screen: the number of variables, workspaces, projects, environments and services that were read, the folder the files were saved to, a warning that audit.csv holds live secrets, and the buttons Open the folder and Audit again." loading="lazy" decoding="async"></a></div><figcaption><b>Finished.</b> What was read, where the files are, and the reminder that <code>audit.csv</code> holds live secrets.</figcaption></figure><div class="lightbox" id="zoom-app-03-results" role="dialog" aria-label="Enlarged screenshot"><a class="lb-link" href="#close" aria-label="Close enlarged screenshot"><img src="assets/img/app/03-results.png" width="1600" height="1600" alt="The results screen: the number of variables, workspaces, projects, environments and services that were read, the folder the files were saved to, a warning that audit.csv holds live secrets, and the buttons Open the folder and Audit again." loading="lazy" decoding="async"></a><a class="lb-close" href="#close" aria-label="Close">&times;</a></div>
+<figure class="shot"><div class="frame"><a class="zoom" href="#zoom-app-04-results-incomplete" title="Click to enlarge" aria-label="Enlarge this screenshot"><img src="assets/img/app/04-results-incomplete.png" width="1600" height="1600" alt="The results screen after an audit in which one project could not be read: it says not everything was read and names the workspace, the project and the reason." loading="lazy" decoding="async"></a></div><figcaption><b>Honest about gaps.</b> A project that could not be read is named, with the reason..</figcaption></figure><div class="lightbox" id="zoom-app-04-results-incomplete" role="dialog" aria-label="Enlarged screenshot"><a class="lb-link" href="#close" aria-label="Close enlarged screenshot"><img src="assets/img/app/04-results-incomplete.png" width="1600" height="1600" alt="The results screen after an audit in which one project could not be read: it says not everything was read and names the workspace, the project and the reason." loading="lazy" decoding="async"></a><a class="lb-close" href="#close" aria-label="Close">&times;</a></div>
+</div>
+
+<h2 id="command">The command line</h2>
+<p>The same audit is available without a window, for scripts and for machines with no screen:</p>
+<pre><code>railway login
+railway-variable-audit --out ~/railway-audit</code></pre>
+<p>It writes the same file, also to your Desktop unless you give <code>--out</code>, prints what it read and what it could not read, and never prints a value. The exit status is 0 when everything was read, 1 when something was skipped or failed, and 2 when it could not start. See the man page <code>railway-variable-audit(1)</code>.</p>
+
+<h2 id="repeat">Next time</h2>
+<ul class="checks">
+<li><b>The policy file remembers your choices.</b> <code>policy.ini</code> in your configuration folder holds the workspaces to skip, and extra names that mark a database credential or an internal secret. Both the window and the command line use it.</li>
+<li><b>Every audit has its own folder</b>, named by the date and time, so you can compare one with another.</li>
+<li><b>Audit on a routine as well.</b> A secret that was rotated last month is worth less to an attacker than one from last year.</li>
+</ul>
+
+<div class="callout warn"><strong class="t">The unshared keys and INI tokens may have been exposed too</strong><p>The incident may have exposed every variable, not only the shared ones. This tool cannot rotate a key that belongs to another company. Go through <code>audit.csv</code> and rotate each one with its provider.</p></div>
+
+<nav class="pager" aria-label="Page navigation"><a class="prev" href="index.html"><small>Previous</small><b>Overview</b></a><a class="next" href="checklist.html"><small>Next</small><b>Checklist</b></a></nav>
+</article>
+<aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li><a href="#why">Why this exists</a></li><li><a href="#scope">Which workspaces</a></li><li><a href="#start">Signing in</a></li><li><a href="#reading">What it reads</a></li><li><a href="#results">The results</a></li><li><a href="#working">Working through it</a></li><li><a href="#tour">A tour of the window</a></li><li><a href="#command">The command line</a></li><li><a href="#repeat">Next time</a></li></ul></aside></aside>
+</div>
+</main>
+<footer class="site-footer">
+<div class="wrap">
+<div class="cols">
+<div><a class="brand" href="index.html" aria-label="Wexford House Railway Variable Auditor - home"><img src="assets/img/favicon.svg" alt="" width="38" height="38"><span><b>Wexford House</b><small>Railway Variable Auditor</small></span></a>
+<p style="margin-top:18px;max-width:34ch">Lists every environment variable, with its value, in every Railway workspace you can reach, in one CSV file.</p></div>
+<div><h4>Guides</h4><ul><li><a href="index.html">Overview</a></li><li><a href="how-it-works.html">How it works</a></li><li><a href="checklist.html">Checklist</a></li><li><a href="sdk.html">SDK reference</a></li><li><a href="building.html">Building</a></li><li><a href="windows.html">Windows</a></li><li><a href="security.html">Security</a></li></ul></div>
+<div><h4>Reference</h4><ul><li><a href="sdk.html">SDK reference</a></li><li><a href="https://docs.railway.com/integrations/api">Railway API documentation</a></li></ul></div>
+</div>
+<p class="legal">&copy; Wexford House. Licensed under the GNU General Public Licence, version 3. Man pages: <code>railway-variable-auditor(1)</code>, <code>railway-variable-audit(1)</code>, <code>railway-variable-auditor-csv(5)</code>, <code>railway(3)</code>, <code>rvcore(3)</code>. Screenshots show demonstration data.</p>
+</div>
+</footer>
+</body>
+</html>

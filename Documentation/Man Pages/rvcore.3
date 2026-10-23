@@ -1,0 +1,344 @@
+.\" Copyright (c) 2026, Wexford House <https://wexfordhouse.co.za/>
+.\" Copyright (c) 2026, Ross Cameron <ross@wexfordhouse.co.za>
+.\" Licensed under the GNU General Public License, version 3.
+.TH RVCORE 3 "October 2026" "Railway Variable Auditor 0.1.0" "Library Functions Manual"
+.SH NAME
+rvcore, rv_discover, rv_read_variables, rv_classify, rv_audit_save, rv_audit_default_folder, rv_write_audit,
+rv_policy_load \- engine of the Railway variable audit
+.SH SYNOPSIS
+.nf
+.B #include <rvcore.h>
+.PP
+.BI "RvTopology *rv_discover(const RvScanOptions *" options ", GError **" error );
+.BI "guint rv_topology_estimate(const RvTopology *" topology );
+.BI "RvInventory *rv_read_variables(RvTopology *" topology ", const RvScanOptions *" options ", GError **" error );
+.BI "void rv_classify(RvInventory *" inventory ", const RvPolicy *" policy );
+.BI "gchar *rv_audit_default_folder(void);
+.BI "gchar *rv_audit_save(const RvInventory *" inventory ", const gchar *" base ", GError **" error );
+.BI "gboolean rv_write_audit(const RvInventory *" inventory ", const gchar *" path ", GError **" error );
+.PP
+Set aside (no program uses these):
+.PP
+.BI "RvPlan *rv_plan_build(RvInventory *" inventory ", gboolean " accept_incomplete ", GError **" error );
+.BI "guint rv_plan_request_estimate(const RvPlan *" plan );
+.BI "gchar *rv_run_dir_new(const gchar *" base ", GError **" error );
+.BI "gboolean rv_run_prepare(const RvPlan *" plan ", const gchar *" run_dir ", GError **" error );
+.BI "gboolean rv_run_stage(const gchar *" run_dir ", const RvRunOptions *" options ", GError **" error );
+.BI "gboolean rv_run_roles(const gchar *" run_dir ", const RvRunOptions *" options ", GError **" error );
+.BI "gchar *rv_scram_verifier(const gchar *" password ", GError **" error );
+.BI "RvPgUrl *rv_pgurl_parse(const gchar *" value );
+.BI "gboolean rv_libpq_available(GError **" error );
+.BI "gboolean rv_run_deploy(const gchar *" run_dir ", const RvRunOptions *" options ", GError **" error );
+.BI "gboolean rv_run_status(const gchar *" run_dir ", RvRunStatus *" status ", GError **" error );
+.BI "gboolean rv_undo_run(const gchar *" run_dir ", const RvRunOptions *" options ,
+.BI "        const RvUndoOptions *" undo ", RvUndoResult *" result ", GError **" error );
+.fi
+.PP
+Link with
+.I librvcore.a
+and
+.IR librailway.a ,
+and with the output of
+.B pkg-config --cflags --libs glib-2.0 gio-2.0 json-glib-1.0
+(and the math library). At run time the Railway CLI must be installed.
+.SH DESCRIPTION
+The engine discovers every workspace, reads every variable, classifies it, and writes the audit files. It is built on the Railway SDK,
+.BR railway (3).
+Calls block. Run them off the GUI thread.
+.PP
+.SS What the audit uses
+.BR rv_discover (),
+.BR rv_topology_estimate (),
+.BR rv_read_variables (),
+.BR rv_classify (),
+.BR rv_audit_default_folder (),
+.BR rv_audit_save (),
+.BR rv_write_audit (),
+.BR rv_run_dir_new ()
+and the policy functions.
+.PP
+.BR rv_audit_save ()
+makes a run folder in
+.I base
+(owner only) and writes
+.I audit.csv
+(owner only, holds every value) into it. It returns the folder, which the caller frees, or NULL with
+.I error
+set. The window and the command line both call it.
+.BR rv_audit_default_folder ()
+returns the Desktop, or the home folder if there is no Desktop. Free it with
+.BR g_free ().
+.BR rv_write_audit ()
+writes one row per variable with its value, category and reason. The category is a hint for the reader, and nothing is changed because of it.
+.SS Set aside
+Everything else on this page (planning, staging, deploying, undo, database roles, run status and generated values) was written and tested, then set aside, because rotating by machine proved too complex to trust during an incident. No program uses it, and it may change or be removed. It is described here so that the code can be understood and its tests read. Steps 4 to 7 below, and the sections Database roles, Run folder (except
+.BR rv_run_dir_new ())
+and Undo, are in this group.
+.SS Sequence
+.IP 1. 3
+.BR rv_discover ()
+lists workspaces, projects, environments and services.
+.BR rv_topology_estimate ()
+says how many Railway requests reading the variables will need.
+.IP 2.
+.BR rv_read_variables ()
+reads every variable in unrendered form. A project that cannot be read is dropped completely and reported as failed, so a half read project cannot mislead the plan. Anything skipped or failed makes the inventory incomplete.
+.IP 3.
+.BR rv_classify ()
+sets the category, the reason and the rotation group of every variable.
+.IP 4.
+.BR rv_plan_build ()
+makes one new value per rotation group. It refuses an incomplete inventory unless
+.I accept_incomplete
+is set, because a secret shared with a place that could not be read would be changed on one side only.
+.IP 5.
+.BR rv_run_dir_new ()
+and
+.BR rv_run_prepare ()
+write the run folder. Nothing is sent to Railway.
+.IP 6.
+.BR rv_run_stage ()
+writes the new values with redeploys suppressed. Before each write it reads the current values, and it stops, naming the variable but never its value, if one was changed by someone since the scan, so their change is never overwritten. A variable that already holds the new value (a crash after Railway accepted the write) is not written again. It stops at the first failure.
+.BR rv_run_deploy ()
+redeploys each affected service once, and carries on after a failure.
+.IP 7.
+.BR rv_undo_run ()
+restores the old values.
+.SS Categories
+.B RvCategory
+values, checked in this order. Only
+.B RV_CAT_ROTATE
+and
+.B RV_CAT_DB_ROLE
+are changed.
+.TP
+.B RV_CAT_DB_ROLE
+(\fBdatabase-role\fR) The password of a database role that can be rotated safely, held by a variable. Changed together with the role. See Database roles.
+.TP
+.B RV_CAT_INI
+(\fBini-config\fR) INI file content. Never changed, even if shared.
+.TP
+.B RV_CAT_DATABASE
+(\fBdatabase-credential\fR) A database credential, or a pasted copy of one (a variable with the same value). Never changed.
+.TP
+.B RV_CAT_HOSTNAME
+(\fBinternal-hostname\fR) Names another container on the private network. Never changed.
+.TP
+.B RV_CAT_REFERENCE
+(\fBreference\fR) The whole value is one ${{...}} reference. Never changed.
+.TP
+.B RV_CAT_UNSHARED
+(\fBunshared\fR) One place only, or an empty or unreadable value. Never changed.
+.TP
+.B RV_CAT_SHARED_CONFIG
+(\fBshared-config\fR) Shared but not a secret. Never changed.
+.TP
+.B RV_CAT_SHARED_MANUAL
+(\fBshared-manual\fR) A shared secret the tool cannot safely regenerate: a key from another provider, no internal secret name, an unsupported format, or a member excluded by the policy. Never changed.
+.TP
+.B RV_CAT_ROTATE
+(\fBshared\fR) A shared secret where
+.B every
+member has an internal secret name, none has a provider hint, and the format is supported. One new value is made for the whole group.
+.PP
+A rotation group is all or nothing: if one member cannot be rotated, or its name does not mark an internal secret, the whole group is left alone, so members never end up on different values and one secret looking name cannot carry another variable along with it.
+.PP
+Names are matched by whole words, split at anything that is not a letter or a digit, so JWT_AUDIENCE, BYPASS and DESIGN do not match secret words.
+.SS Database roles
+.B rv_classify
+also finds database roles. A Postgres service is one that defines
+.BR POSTGRES_PASSWORD .
+A role is a user named in a connection URL on its private network (the host is the service name, lower case, with spaces and underscores as hyphens, with or without
+.BR .railway.internal )
+that is not the service's template login (\fBPOSTGRES_USER\fR, or postgres). Every variable of the same project and environment that contains the role's password, raw or percent-encoded, is a consumer. The role is listed in
+.I inventory->roles
+and its consumers become
+.BR RV_CAT_DB_ROLE ,
+only if everything is understood: the password is at least 12 characters, all the URLs agree on it and on the database, and it does not appear in another project or environment, in an INI or other multi-line value, in a variable that the policy excludes, or in a shared value. Otherwise the variables stay
+.B RV_CAT_DATABASE
+with the reason.
+.PP
+.BR rv_plan_build ()
+makes a new 32 character password for each role, and the new value of each consumer (the old password swapped for the new one in place). A role is all or nothing, and can be switched off with
+.IR RvPlanRole.enabled .
+.BR rv_run_prepare ()
+writes
+.IR roles.csv ,
+and lists the consumers of a role that was switched off in
+.IR not-changed.csv .
+.PP
+.BR rv_run_roles ()
+changes the passwords, after the variables have been staged. For each role it first logs in with the new password (a crash may already have changed it, which is recorded as done), then with the current password, which must work or the role is refused without any change. It then sends
+.B ALTER ROLE
+with a SCRAM-SHA-256 verifier from
+.BR rv_scram_verifier (),
+logs in with the new password, and sets the old password back if that fails. It stops at the first failure and says how far it got. The database service's own login is read from its variables, rendered, in memory only. One tunnel is opened for each database service and closed at the end.
+.BR rv_run_deploy ()
+refuses to run while any role is still waiting.
+.PP
+The database and the tunnel are
+.B RvDbOps
+and
+.BR RvTunnelOps .
+Leave them NULL in
+.B RvRunOptions
+for the real ones: libpq, loaded when needed with
+.BR GModule ,
+so there is no build dependency on it, and
+.BR "railway connect <service> --tunnel-only" ,
+started on a free local port and stopped with Ctrl+C. The tunnel's output is discarded because it may print the password.
+.BR rv_libpq_available ()
+says whether libpq was found. Set the environment variable
+.B RVC_LIBPQ
+to a library path to use another copy. The tests pass fakes.
+.PP
+.BR rv_undo_run ()
+also restores roles: for each role whose password was changed it logs in with the new password and, if that works, sets the old one back and checks it. If the new password no longer works but the old one does, the row is
+.BR already-original .
+If neither works, the role was changed since the run and it is a
+.BR conflict ,
+unless
+.I overwrite_conflicts
+is set. Role rows appear in the undo report as
+.IR role:<name> .
+.PP
+.BR rv_pgurl_parse ()
+reads postgres:// and postgresql:// URLs with a user and a password, percent-decoded.
+.BR rv_pgurl_replace_password ()
+swaps a password in any value, raw or percent-encoded.
+.SS Run folder
+.BR rv_run_prepare ()
+writes
+.IR changes.csv ,
+.IR roles.csv ,
+.IR not-changed.csv ,
+.IR run-report.csv ,
+.I deploys.csv
+and
+.IR progress.csv .
+.I changes.csv
+is written first, as an owner only file, before anything is sent. See
+.BR railway-variable-auditor-csv (5).
+Stage, deploy and undo read the run folder, so repeating them is safe:
+.BR rv_run_stage ()
+skips batches that are already done, and
+.BR rv_run_deploy ()
+skips services that are already redeployed.
+.BR rv_run_status ()
+reports how far a run got.
+.SS Undo
+.BR rv_undo_run ()
+reads the current value of each variable. It restores the old value only if the current value is the recorded new value. A different value is a
+.B conflict
+and is left alone unless
+.I overwrite_conflicts
+is set. A value that is already the old value is
+.BR already-original .
+.I dry_run
+writes
+.I undo-preview.csv
+and changes nothing. Otherwise
+.I undo-report.csv
+is written, even if the undo is cancelled, because some values may already have been restored. With
+.I deploy
+the services of every environment that holds the old values are redeployed once: a service that an earlier undo already redeployed is skipped, one that failed is tried again, and a failure is counted in
+.I redeploy_failed
+and reported as
+.BR RV_ERROR_STOPPED .
+Set
+.I only_projects
+(a set of project ids) to limit the undo. Repeating an undo is safe.
+.SS Policy
+.B RvPolicy
+remembers decisions between incidents: workspaces to skip, variables that must never be rotated, and extra credential and internal secret names.
+.BR rv_policy_load ()
+returns an empty policy if the file does not exist.
+.BR rv_policy_default_path ()
+is
+.I policy.ini
+in the user configuration folder.
+.SS Random values
+.BR rv_generate_like ()
+returns a new random value in the same format and length as the old one: UUID, hex (case kept), digits, base64 (padding kept, and the last character chosen so that a strict decoder accepts it), base64url or alphanumeric. Anything else fails with
+.BR RV_ERROR_INVALID .
+Values come from the operating system's secure random source (\fB/dev/urandom\fR, or \fBBCryptGenRandom\fR on Windows) with unbiased character selection.
+.BR rv_looks_like_secret (),
+.BR rv_name_is_secretish (),
+.BR rv_name_is_internal_secret (),
+.BR rv_name_is_provider ()
+and
+.BR rv_value_has_provider_prefix ()
+are the tests the classifier uses.
+.SS Helpers
+.BR rv_csv_append_row ()
+and
+.BR rv_csv_parse ()
+write and read RFC 4180 CSV.
+.BR rv_write_file ()
+writes atomically, and a private file is owner only (mode 0600, or a restricted ACL on Windows, which is not yet tested).
+.BR rv_write_audit ()
+writes
+.I audit.csv
+(every variable with its value, category and reason) as an owner only file, and
+.BR rv_write_not_changed ()
+and
+.BR rv_write_run_report ()
+write the two reports. They never contain a value. With
+.I include_rotatable
+the first also lists the shared secrets the tool could rotate (category \fBshared\fR), which the old scan command used so that its checklist was complete. A group the user switched off before
+.BR rv_run_prepare ()
+is listed as \fBshared-manual\fR, so it stays on the checklist.
+.BR rv_now_iso ()
+returns the time as ISO 8601 in UTC.
+.SH ERRORS
+Errors use the domain
+.BR RV_ERROR .
+Railway errors keep the domain
+.BR RW_ERROR ,
+see
+.BR railway (3).
+.TP
+.B RV_ERROR_INVALID
+Bad arguments or an unsupported value format.
+.TP
+.B RV_ERROR_IO
+A file could not be read or written.
+.TP
+.B RV_ERROR_CSV
+A CSV file is malformed.
+.TP
+.B RV_ERROR_CANCELLED
+The
+.B GCancellable
+was cancelled.
+.TP
+.B RV_ERROR_RANDOM
+No secure random source.
+.TP
+.B RV_ERROR_STATE
+The step cannot run now, for example a plan from an incomplete scan.
+.TP
+.B RV_ERROR_STOPPED
+A step stopped part way. The message says how far. Resume it, or undo.
+.TP
+.B RV_ERROR_DB
+The database could not be reached, refused a statement, or libpq is missing.
+.TP
+.B RV_ERROR_DB_AUTH
+The database refused the login.
+.TP
+.B RV_ERROR_TUNNEL
+The secure tunnel did not open.
+.SH SECURITY
+Variable values are held in memory only as long as needed and are overwritten with zeros when freed. They are never written to a report, a log or the progress file. The only file that holds values is
+.IR changes.csv ,
+which is owner only, and
+.IR roles.csv ,
+which holds database passwords and is owner only too. Values reach the Railway CLI on standard input, never as arguments. A database password reaches Postgres only as a SCRAM-SHA-256 hash, through a secure tunnel whose output is discarded. The database login is read in memory and never logged.
+.SH SEE ALSO
+.BR railway (3),
+.BR railway-variable-auditor (1),
+.BR railway-variable-audit (1),
+.BR railway-variable-auditor-csv (5)
+.SH AUTHORS
+Ross Cameron <ross@wexfordhouse.co.za>, Wexford House.

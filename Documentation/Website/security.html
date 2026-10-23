@@ -1,0 +1,91 @@
+<!--
+  Copyright (c) 2026, Ross WD Cameron <ross@wexfordhouse.co.za>
+  Copyright (c) 2026, Wexford House <https://wexfordhouse.co.za/>
+-->
+<!doctype html>
+<html lang="en-ZA">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Security | Wexford House Railway Variable Auditor</title>
+<meta name="description" content="How Railway Variable Auditor handles the Railway login and variable values, how to look after the audit file, and what it cannot do.">
+<meta name="theme-color" content="#0a1f35">
+<link rel="icon" href="assets/img/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="site-header">
+<div class="wrap">
+<a class="brand" href="index.html" aria-label="Wexford House Railway Variable Auditor - home"><img src="assets/img/favicon.svg" alt="" width="38" height="38"><span><b>Wexford House</b><small>Railway Variable Auditor</small></span></a>
+<input type="checkbox" id="nav-toggle" class="nav-toggle" aria-label="Toggle navigation menu">
+<label for="nav-toggle" class="nav-button" aria-hidden="true"><span></span><span></span><span></span></label>
+<nav class="site-nav" aria-label="Main"><a href="index.html">Overview</a><a href="how-it-works.html">How it works</a><a href="checklist.html">Checklist</a><a href="sdk.html">SDK reference</a><a href="building.html">Building</a><a href="windows.html">Windows</a><a href="security.html" aria-current="page">Security</a></nav>
+</div>
+</header>
+<main id="main">
+<section class="page-head"><div class="wrap">
+<div class="crumbs"><a href="index.html">Overview</a> &nbsp;/&nbsp; Security</div>
+<span class="eyebrow">For security reviewers</span>
+<h1>Security</h1>
+<p class="lead">How the login and the values are handled, how to look after the audit file, and what the tool cannot do for you.</p>
+</div></section>
+<div class="wrap doc">
+<article>
+
+<div class="callout gold"><strong class="t">The short version</strong><p>The Railway login and the variable values are the most sensitive things this tool touches. The tool never sees your token. Values stay in memory, are wiped when freed, and are never printed or logged. The one file that holds live secrets is <code>audit.csv</code>, and you must look after it.</p></div>
+
+<h2 id="token">The login</h2>
+<ul class="checks">
+<li>You sign in with <code>railway login</code>, a browser sign-in as yourself. That login reaches every workspace you can access, and so it can read every variable you can. Run <code>railway logout</code> when the work is finished.</li>
+<li><b>The tool never sees the token.</b> The Railway CLI holds it, and the tool does not read the CLI configuration file. If a token is ever supplied for headless use, it goes to the CLI through its environment only, never an argument.</li>
+<li><b>Nothing is ever written to Railway.</b> The audit only reads. It sends no mutation, so it cannot change or redeploy anything.</li>
+</ul>
+
+<h2 id="values">Variable values</h2>
+<ul class="checks">
+<li>Values are wiped when their table is freed, and request and response bodies are wiped after use. Values are never put in error messages or logs.</li>
+<li>The window never shows a value. The command line never prints one.</li>
+<li>No variable value is written anywhere except <code>audit.csv</code>.</li>
+</ul>
+
+<h2 id="network">Network</h2>
+<p>Requests go through the Railway CLI, which makes the HTTPS connection to Railway and checks the certificate. Responses are treated as untrusted input: lengths and shapes are checked, and a malformed response is an error, not a guess.</p>
+
+<h2 id="csv">The audit file</h2>
+<div class="callout warn"><strong class="t">It contains live secrets</strong><p><code>audit.csv</code> holds the current value of every variable you can read, in one file. It is created readable only by you (mode 0600 on Linux and macOS, a restricted access list on Windows), inside a run folder that is also owner only. Anyone who reads it can use every key in it until you rotate them.</p></div>
+<ul class="checks">
+<li><b>Store it on an encrypted disk.</b> Do not email it, put it in a shared folder or a ticket, or paste it into a chat.</li>
+<li><b>Treat a copy like the original.</b> Opening it in a spreadsheet may leave autosave and recovery copies elsewhere. Remove them too.</li>
+<li><b>Delete it when you have finished.</b> Once everything is rotated, the old values are worth nothing to you and a lot to an attacker.</li>
+<li><b>Values may be copied from other values.</b> A pasted database password appears in more than one row. Rotating one is not enough.</li>
+</ul>
+
+<h2 id="limits">What the tool does not do</h2>
+<ul class="checks">
+<li><b>It does not rotate anything.</b> It lists. You rotate each key with its provider, and set the new value in Railway.</li>
+<li><b>It cannot read sealed variables.</b> Railway may hide their values from the API. They appear with an empty value. Rotate them by hand.</li>
+<li><b>It does not change database credentials.</b> Railway says to use Regenerate on the database service and not to edit the variable by hand. See the <a href="checklist.html#databases">checklist</a>.</li>
+<li><b>It does not rotate private registry credentials</b>, which Railway also advises rolling. They are not variables. Do this by hand.</li>
+<li><b>It does not review logs.</b> Railway advises reviewing the logs of your services for unusual activity. Do this by hand.</li>
+<li><b>It does not remove the old values from Railway&rsquo;s history.</b> Ask Railway what they retain.</li>
+</ul>
+
+<nav class="pager" aria-label="Page navigation"><a class="prev" href="windows.html"><small>Previous</small><b>Windows</b></a></nav>
+</article>
+<aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li><a href="#token">The login</a></li><li><a href="#values">Variable values</a></li><li><a href="#network">Network</a></li><li><a href="#csv">The audit file</a></li><li><a href="#limits">What it does not do</a></li></ul></aside></aside>
+</div>
+</main>
+<footer class="site-footer">
+<div class="wrap">
+<div class="cols">
+<div><a class="brand" href="index.html" aria-label="Wexford House Railway Variable Auditor - home"><img src="assets/img/favicon.svg" alt="" width="38" height="38"><span><b>Wexford House</b><small>Railway Variable Auditor</small></span></a>
+<p style="margin-top:18px;max-width:34ch">Lists every environment variable, with its value, in every Railway workspace you can reach, in one CSV file.</p></div>
+<div><h4>Guides</h4><ul><li><a href="index.html">Overview</a></li><li><a href="how-it-works.html">How it works</a></li><li><a href="checklist.html">Checklist</a></li><li><a href="sdk.html">SDK reference</a></li><li><a href="building.html">Building</a></li><li><a href="windows.html">Windows</a></li><li><a href="security.html">Security</a></li></ul></div>
+<div><h4>Reference</h4><ul><li><a href="sdk.html">SDK reference</a></li><li><a href="https://docs.railway.com/integrations/api">Railway API documentation</a></li></ul></div>
+</div>
+<p class="legal">&copy; Wexford House. Licensed under the GNU General Public Licence, version 3. Man pages: <code>railway-variable-auditor(1)</code>, <code>railway-variable-audit(1)</code>, <code>railway-variable-auditor-csv(5)</code>, <code>railway(3)</code>, <code>rvcore(3)</code>. Screenshots show demonstration data.</p>
+</div>
+</footer>
+</body>
+</html>

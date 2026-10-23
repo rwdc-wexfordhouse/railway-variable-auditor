@@ -1,0 +1,341 @@
+.\" Copyright (c) 2026, Wexford House <https://wexfordhouse.co.za/>
+.\" Copyright (c) 2026, Ross Cameron <ross@wexfordhouse.co.za>
+.\" Licensed under the GNU General Public License, version 3.
+.TH RAILWAY 3 "October 2026" "Railway Variable Auditor 0.1.0" "Library Functions Manual"
+.SH NAME
+railway, rw_client_new, rw_client_free, rw_client_execute, rw_list_workspaces,
+rw_list_projects, rw_list_services, rw_list_environments, rw_get_variables,
+rw_upsert_variables, rw_redeploy_service \- C11 client for the Railway public API
+.SH SYNOPSIS
+.nf
+.B #include <railway.h>
+.PP
+.BI "RwClient *rw_client_new(const gchar *" token );
+.BI "void rw_client_free(RwClient *" client );
+.PP
+.BI "JsonNode *rw_client_execute(RwClient *" client ", const gchar *" query ,
+.BI "                            JsonNode *" variables ", GError **" error );
+.PP
+.BI "GPtrArray *rw_list_workspaces(RwClient *" client ", GError **" error );
+.BI "GPtrArray *rw_list_projects(RwClient *" client ", const gchar *" workspace_id ,
+.BI "                            GError **" error );
+.BI "GPtrArray *rw_list_services(RwClient *" client ", const gchar *" project_id ,
+.BI "                            GError **" error );
+.BI "GPtrArray *rw_list_environments(RwClient *" client ", const gchar *" project_id ,
+.BI "                            GError **" error );
+.PP
+.BI "GHashTable *rw_get_variables(RwClient *" client ", const gchar *" project_id ,
+.BI "        const gchar *" environment_id ", const gchar *" service_id ,
+.BI "        gboolean " unrendered ", GError **" error );
+.BI "gboolean rw_upsert_variables(RwClient *" client ", const gchar *" project_id ,
+.BI "        const gchar *" environment_id ", const gchar *" service_id ,
+.BI "        GHashTable *" variables ", gboolean " skip_deploys ", GError **" error );
+.BI "gboolean rw_redeploy_service(RwClient *" client ", const gchar *" service_id ,
+.BI "        const gchar *" environment_id ", GError **" error );
+.PP
+.BI "gchar *rw_cli_find(void);"
+.BI "void rw_cli_set_program(const gchar *" path );
+.BI "gchar *rw_cli_version(GError **" error );
+.BI "gboolean rw_cli_whoami(gchar **" name ", gchar **" email ", GError **" error );
+.BI "gboolean rw_cli_login(GError **" error );
+.BI "gboolean rw_cli_logout(GError **" error );
+.fi
+.PP
+Link with the output of
+.B pkg-config --cflags --libs glib-2.0 gio-2.0 json-glib-1.0
+and the static library
+.IR librailway.a .
+At run time the Railway CLI (the
+.B railway
+program) must be installed.
+.SH DESCRIPTION
+The Railway SDK is a small C11 client for the Railway public GraphQL API.
+It handles paging, rate limits and retries, and gives typed access to the calls that the Railway Variable Auditor needs.
+.PP
+Requests run through the Railway CLI (\fBrailway api\fR), which is a required dependency. The user signs in with
+.BR "railway login" ,
+a browser sign-in as themselves that reaches every workspace they can access. The SDK never sees the token. The query text is passed to the CLI as an argument. The variables, which carry secret values, are passed on standard input, so they never appear in a process listing.
+.PP
+Calls block. Run them off the GUI thread. One
+.B RwClient
+must not be used from two threads at once.
+.SS Status of each call
+Documented by Railway:
+.BR rw_list_projects ,
+.BR rw_get_variables ,
+.BR rw_upsert_variables .
+.PP
+Confirmed against the live API on 2026-10-22:
+.BR rw_list_workspaces ,
+and paging with
+.I first
+and
+.I after
+for
+.BR rw_list_projects ,
+.BR rw_list_services
+and
+.BR rw_list_environments .
+.PP
+Confirmed to exist in the live schema, but not yet called:
+.BR rw_redeploy_service
+(the
+.B serviceInstanceRedeploy
+mutation).
+.PP
+If a call is wrong it fails with an error. It does not return wrong data.
+.SH TYPES
+.TP
+.B RwClient
+Opaque client. Holds the optional token, retry settings and counters.
+.TP
+.B RwEntity
+A structure with two strings,
+.I id
+and
+.IR name ,
+used for workspaces, projects, services and environments. Free with
+.BR rw_entity_free ().
+.TP
+.B RwHttpResponse
+What a transport returns: HTTP
+.IR status ,
+the
+.IR body ,
+and the integers
+.IR retry_after ,
+.I rate_remaining
+and
+.IR rate_reset ,
+each \-1 when the transport cannot supply it. The CLI transport never supplies the three header values.
+.TP
+.B RwTransportFunc
+One request. The default runs the Railway CLI. Replace it with
+.BR rw_client_set_transport ()
+to test without a network.
+.TP
+.B RwSleepFunc
+Called to wait. The default uses
+.BR g_usleep ().
+.SH FUNCTIONS
+.SS Client
+.TP
+.BR rw_client_new ()
+Create a client. Pass NULL to use the Railway CLI login, which reaches every workspace the signed-in user can access. A token, if given, is copied and handed to the CLI through its environment only, as
+.BR RAILWAY_API_TOKEN ,
+never as an argument.
+.TP
+.BR rw_client_free ()
+Free the client. A token, if one was given, is overwritten with zeros first.
+.TP
+.BR rw_client_set_endpoint ()
+Change the API address. Only transports that make HTTP calls use it. The CLI transport ignores it.
+.TP
+.BR rw_client_set_transport ()
+Replace the HTTP transport. The destroy function is called when the client is freed.
+.TP
+.BR rw_client_set_sleep ()
+Replace the wait function.
+.TP
+.BR rw_client_set_max_retries ()
+Retries for 429, 5xx and network errors. The default is 5.
+.TP
+.BR rw_client_set_max_wait ()
+The longest single wait, in seconds, that the client accepts after a 429. The default is 120.
+.TP
+.BR rw_client_get_request_count ()
+Requests sent so far, including retries. Use it to compare a run with the hourly quota.
+.TP
+.BR rw_client_get_rate_remaining ()
+The last
+.B X-RateLimit-Remaining
+value, or \-1. Always \-1 through the CLI transport.
+.TP
+.BR rw_client_get_retry_after ()
+The last
+.B Retry-After
+value, or \-1. Always \-1 through the CLI transport.
+.SS Raw requests
+.TP
+.BR rw_client_execute ()
+Run one GraphQL operation.
+.I variables
+is borrowed and may be NULL. Returns the
+.I data
+member, which the caller frees with
+.BR json_node_unref (),
+or NULL with
+.I error
+set.
+.IP
+A 429 response waits for the
+.B Retry-After
+time and retries. The CLI does not pass that header on, so the client backs off for 1, 2, 4, 8 and 16 seconds instead. If the wait is longer than the maximum, or the retries run out, the call fails with
+.BR RW_ERROR_RATE_LIMITED
+so the caller can save its progress and resume later. HTTP 5xx responses and network failures back off for 1, 2, 4, 8 and 16 seconds, then 30 seconds.
+.SS Listing
+.TP
+.BR rw_list_workspaces ()
+Workspaces the signed-in user can access. Returns an array of
+.BR RwEntity ,
+freed with
+.BR g_ptr_array_unref ().
+.TP
+.BR rw_list_projects ()
+Projects in a workspace. Pass NULL as
+.I workspace_id
+Pages are followed until none remain.
+.TP
+.BR rw_list_services ()
+Services in a project.
+.TP
+.BR rw_list_environments ()
+Environments in a project.
+.PP
+If Railway reports another page but gives no new cursor, the call fails with
+.BR RW_ERROR_PARSE
+instead of looping.
+.SS Variables
+.TP
+.BR rw_get_variables ()
+Read variables into a hash table of name to value. Pass NULL as
+.I service_id
+for the shared variables of the environment. With
+.I unrendered
+set, references such as
+.B ${{Postgres.DATABASE_URL}}
+are returned as written. Free with
+.BR g_hash_table_unref ();
+the values are overwritten with zeros as the table is destroyed.
+.TP
+.BR rw_upsert_variables ()
+Create or update every variable in the table with one request. Pass NULL as
+.I service_id
+for shared variables. The SDK never asks Railway to replace, so variables missing from the table are left alone. Set
+.I skip_deploys
+to stop Railway redeploying on the write. An empty table fails with
+.BR RW_ERROR_INVALID
+and sends nothing. Railway must answer
+.BR true :
+any other answer fails with
+.BR RW_ERROR_GRAPHQL .
+.TP
+.BR rw_redeploy_service ()
+Redeploy a service in an environment, so that it picks up changed variables. This uses the
+.B serviceInstanceRedeploy
+mutation, and fails with
+.B RW_ERROR_GRAPHQL
+unless Railway answers true. It redeploys what is already deployed. It does not use
+.BR serviceInstanceDeploy ,
+which can build the latest commit and so change the code that runs.
+.SS Helpers
+.TP
+.BR rw_variables_new ()
+Create a table whose values are wiped when freed. Use it to build the table for
+.BR rw_upsert_variables ().
+.TP
+.BR rw_secure_free ()
+Overwrite a string with zeros, then free it. Safe on NULL.
+.TP
+.BR rw_entity_new ", " rw_entity_free
+Create and free an
+.BR RwEntity .
+.SS The Railway CLI
+.TP
+.BR rw_cli_find ()
+The path of the
+.B railway
+program, or NULL if it is not on the path. Free with
+.BR g_free ().
+.TP
+.BR rw_cli_set_program ()
+Use this program instead of searching the path. For tests or a custom install. Pass NULL to go back to the search.
+.TP
+.BR rw_cli_version ()
+The version text, for example
+.IR "railway 5.52.1" .
+Free with
+.BR g_free ().
+Fails with
+.B RW_ERROR_CLI
+if the CLI is missing.
+.TP
+.BR rw_cli_whoami ()
+The name and email of the signed-in user. Either output may be NULL. Fails with
+.B RW_ERROR_AUTH
+when nobody is signed in.
+.TP
+.BR rw_cli_login ()
+Run the CLI browser sign-in and wait until it ends. It uses the terminal of the caller to show any sign-in link. Call it off the GUI thread.
+.TP
+.BR rw_cli_logout ()
+Sign out of the CLI.
+.PP
+The SDK was tested against Railway CLI 5.52.1.
+.SH ERRORS
+Errors are returned in a
+.B GError
+with the domain
+.BR RW_ERROR .
+.TP
+.B RW_ERROR_INVALID
+Bad arguments, such as an empty variable table or an invalid endpoint address.
+.TP
+.B RW_ERROR_NETWORK
+Railway could not be reached after the retries.
+.TP
+.B RW_ERROR_HTTP
+An unexpected HTTP status, such as a persistent 5xx.
+.TP
+.B RW_ERROR_AUTH
+HTTP 401 or 403, a GraphQL error saying the request was not authorised, or nobody signed in to the CLI. Run
+.BR "railway login" .
+.TP
+.B RW_ERROR_RATE_LIMITED
+The quota is used up. The message says how long to wait when Railway said so, which the CLI transport cannot. Save progress and resume later.
+.TP
+.B RW_ERROR_CLI
+The Railway CLI is not installed, could not be run, or failed in a way the SDK does not recognise. The message includes install instructions when it is missing. This is a permanent problem, so it is not retried.
+.TP
+.B RW_ERROR_GRAPHQL
+Railway returned errors. The message is Railway's first error message.
+.TP
+.B RW_ERROR_PARSE
+The response was not the expected shape.
+.SH RATE LIMITS
+Railway limits requests per hour (Hobby 1,000, Pro 10,000) and per second (Hobby 10, Pro 50). Use
+.BR rw_upsert_variables ()
+once per service and environment, not once per variable.
+.SH ENVIRONMENT
+.TP
+.B RVC_RAILWAY_CLI
+The path of the Railway CLI program, used when it was not set with
+.BR rw_cli_set_program ()
+and instead of searching the path.
+.SH SECURITY
+Variables, which carry secret values, are sent to the CLI on standard input and never as arguments. Values and any supplied token are overwritten with zeros when freed, and request and response bodies are wiped after use. The SDK never writes a token or a value to a log, an error message or a file, and it does not read the CLI configuration file. The CLI makes the TLS connection and checks the certificate. Parsed JSON that the caller holds is not wiped, so free it promptly.
+.SH EXAMPLE
+.nf
+RwClient *client = rw_client_new(NULL);   /* uses the railway login */
+GError *error = NULL;
+GPtrArray *workspaces = rw_list_workspaces(client, &error);
+
+if (workspaces == NULL) {
+    g_printerr("%s\en", error->message);
+    g_clear_error(&error);
+} else {
+    for (guint i = 0; i < workspaces->len; i++) {
+        RwEntity *w = workspaces->pdata[i];
+        g_print("%s  %s\en", w->id, w->name);
+    }
+    g_ptr_array_unref(workspaces);
+}
+rw_client_free(client);
+.fi
+.SH SEE ALSO
+.BR railway-variable-auditor (1),
+.BR railway-variable-auditor-csv (5)
+.PP
+Railway API documentation: https://docs.railway.com/integrations/api
+.SH AUTHORS
+Ross Cameron <ross@wexfordhouse.co.za>, Wexford House.

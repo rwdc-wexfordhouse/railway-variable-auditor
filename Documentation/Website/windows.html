@@ -1,0 +1,120 @@
+<!--
+  Copyright (c) 2026, Ross WD Cameron <ross@wexfordhouse.co.za>
+  Copyright (c) 2026, Wexford House <https://wexfordhouse.co.za/>
+-->
+<!doctype html>
+<html lang="en-ZA">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Windows | Wexford House Railway Variable Auditor</title>
+<meta name="description" content="Install Railway Variable Auditor on Windows 11 with a per-user setup program, what it installs, the silent switches, and an honest list of what has and has not been tested.">
+<meta name="theme-color" content="#0a1f35">
+<link rel="icon" href="assets/img/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="site-header">
+<div class="wrap">
+<a class="brand" href="index.html" aria-label="Wexford House Railway Variable Auditor - home"><img src="assets/img/favicon.svg" alt="" width="38" height="38"><span><b>Wexford House</b><small>Railway Variable Auditor</small></span></a>
+<input type="checkbox" id="nav-toggle" class="nav-toggle" aria-label="Toggle navigation menu">
+<label for="nav-toggle" class="nav-button" aria-hidden="true"><span></span><span></span><span></span></label>
+<nav class="site-nav" aria-label="Main"><a href="index.html">Overview</a><a href="how-it-works.html">How it works</a><a href="checklist.html">Checklist</a><a href="sdk.html">SDK reference</a><a href="building.html">Building</a><a href="windows.html" aria-current="page">Windows</a><a href="security.html">Security</a></nav>
+</div>
+</header>
+<main id="main">
+<section class="page-head"><div class="wrap">
+<div class="crumbs"><a href="index.html">Overview</a> &nbsp;/&nbsp; Windows</div>
+<span class="eyebrow">For administrators</span>
+<h1>Windows 11</h1>
+<p class="lead">A per-user setup program for the audit window and the audit command.</p>
+</div></section>
+<div class="wrap doc">
+<article>
+
+<div class="callout warn"><strong class="t">What has been tested</strong><p>The Windows build is cross-compiled on Linux. It has been installed, run and uninstalled <b>under Wine in a container</b>, with a fake Railway CLI and invented data. <b>It has not been run on Windows 11.</b> Wine is not Windows. The setup program is not code signed. Treat this as a first build, and report what you find.</p></div>
+
+<h2 id="before">Before you install</h2>
+<ul class="checks">
+<li><b>Install the Railway CLI.</b> Setup does not install it. Use <code>npm i -g @railway/cli</code> or <code>scoop install railway</code>, then sign in with <code>railway login</code> (or press <span class="ui">Sign in with Railway</span> in the window).</li>
+<li><b>No administrator rights are needed.</b> Everything goes into your own account.</li>
+<li><b>Expect a SmartScreen warning.</b> The installer is not code signed, so Windows says it does not recognise the publisher. Choose <span class="ui">More info</span>, then <span class="ui">Run anyway</span>, only if you trust where you got the file.</li>
+</ul>
+
+<h2 id="install">What Setup does</h2>
+<ol class="steps">
+<li><h3>Welcome and licence</h3><p>A short wizard shows the licence (GNU General Public Licence, version 3). You must accept it.</p></li>
+<li><h3>Where to install</h3><p>The default is <code>%LOCALAPPDATA%\Programs\Railway Variable Auditor</code>. You can choose another folder.</p></li>
+<li><h3>Options</h3><p>A Start menu folder (on by default), a Desktop shortcut (off), and adding the command line program <code>railway-variable-audit</code> to your <code>PATH</code> (on).</p></li>
+<li><h3>Install</h3><p>The programs, the runtime they need, the licences and this website are written to the folder. An entry is added to <span class="ui">Settings, Apps</span> so you can uninstall it. No file types are registered, and nothing else on the computer is changed.</p></li>
+</ol>
+<p>To remove it, use <span class="ui">Settings, Apps</span>, or the <span class="ui">Uninstall Railway Variable Auditor</span> shortcut. Uninstalling removes the files, the shortcuts, the Apps entry and the <code>PATH</code> entry. Audit files you saved are never touched.</p>
+
+<h3 id="silent">Silent install</h3>
+<div class="table-wrap"><table>
+<thead><tr><th>Switch</th><th>Effect</th></tr></thead>
+<tbody>
+<tr><td><code>/S</code> (or <code>--quiet</code>)</td><td>No windows. Install with the defaults.</td></tr>
+<tr><td><code>/D=C:\folder</code> (or <code>--dir</code>)</td><td>Install in this folder.</td></tr>
+<tr><td><code>--no-path</code></td><td>Do not add the command line program to your <code>PATH</code>.</td></tr>
+<tr><td><code>--no-menu</code></td><td>No Start menu folder.</td></tr>
+<tr><td><code>--desktop</code></td><td>Add a Desktop shortcut.</td></tr>
+<tr><td><code>uninstall.exe --uninstall --quiet</code></td><td>Remove it without asking.</td></tr>
+</tbody></table></div>
+
+<h2 id="differences">What is different on Windows</h2>
+<ul class="checks">
+<li><b>The audit goes on your Desktop</b>, as on Linux, in a new <code>run-YYYYMMDD-HHMMSS</code> folder.</li>
+<li><b>The audit file is restricted to you</b> with an access list instead of mode 0600. This has not been checked on a real Windows file system. Do not rely on it: keep the file on an encrypted disk, and delete it when you have finished (see <a href="security.html#csv">Security</a>).</li>
+<li><b>File names and arguments are UTF-8</b>, so names with accents come through.</li>
+</ul>
+
+<h2 id="tested">What was and was not tested</h2>
+<div class="table-wrap"><table>
+<thead><tr><th>Check</th><th>State</th></tr></thead>
+<tbody>
+<tr><td>Both programs and the setup program compile with the mingw64 compiler, with no warnings</td><td><b>Done</b></td></tr>
+<tr><td>Silent install under Wine: programs, runtime, licences and website present</td><td><b>Done</b> (Wine)</td></tr>
+<tr><td>Add/Remove Programs entry and <code>PATH</code> entry written, no file types registered</td><td><b>Done</b> (Wine registry)</td></tr>
+<tr><td><code>railway-variable-audit.exe</code> runs a whole audit against a fake CLI, writes one <code>audit.csv</code> with both workspaces, and prints no value</td><td><b>Done</b> (Wine)</td></tr>
+<tr><td>The window opens</td><td><b>Done</b> (Wine, headless X server). Not looked at.</td></tr>
+<tr><td>Uninstall removes the folder, the Apps entry and the <code>PATH</code> entry</td><td><b>Done</b> (Wine)</td></tr>
+<tr><td>Running on Windows 11</td><td><b>Not tried</b></td></tr>
+<tr><td>The setup wizard on screen</td><td><b>Not looked at</b></td></tr>
+<tr><td>The real Railway CLI on Windows (<code>railway.exe</code>, or <code>railway.cmd</code> from npm)</td><td><b>Not tried</b></td></tr>
+<tr><td>No console window flashing when the window runs the CLI</td><td><b>Not checked</b></td></tr>
+<tr><td>The access list on <code>audit.csv</code></td><td><b>Not checked</b></td></tr>
+<tr><td>Code signing</td><td><b>None.</b> SmartScreen will warn.</td></tr>
+</tbody></table></div>
+<p>The first Wine run found a real fault: the bundle was missing GLib&rsquo;s two <code>gspawn-win64-helper</code> programs, so the audit could not start the Railway CLI. It is fixed, and the test now covers it.</p>
+
+<h2 id="building">Building the setup program</h2>
+<p>On Rocky Linux 10 (or another Red Hat Enterprise Linux 10 system with EPEL):</p>
+<pre><code>Support/windows/setup-toolchain.sh   # once: mingw64 compiler, meson, podman
+make installer                       # build/RailwayVariableAuditor-0.1.0-setup.exe
+make windows-test                    # the Wine smoke test (needs docker)</code></pre>
+<ul class="checks">
+<li><b>The libraries are MSYS2&rsquo;s.</b> GTK 4, json-glib and what they need are downloaded from the MSYS2 UCRT64 repository, and each file is checked against a SHA-256 hash pinned in <code>Support/windows/msys2.lock</code>. A file that does not match is refused.</li>
+<li><b>The setup program is hand written.</b> A small Win32 wizard (<code>Source/windows/installer</code>), with the files appended to it, compressed. There is no third party installer framework.</li>
+<li><b>Licences travel with it.</b> The licence text of every bundled package is installed under <code>share\licenses</code>. See <code>THIRD-PARTY-NOTICES.md</code>.</li>
+</ul>
+
+<nav class="pager" aria-label="Page navigation"><a class="prev" href="building.html"><small>Previous</small><b>Building</b></a><a class="next" href="security.html"><small>Next</small><b>Security</b></a></nav>
+</article>
+<aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li><a href="#before">Before you install</a></li><li><a href="#install">What Setup does</a></li><li><a href="#differences">What is different</a></li><li><a href="#tested">What was tested</a></li><li><a href="#building">Building it</a></li></ul></aside>
+</div>
+</main>
+<footer class="site-footer">
+<div class="wrap">
+<div class="cols">
+<div><a class="brand" href="index.html" aria-label="Wexford House Railway Variable Auditor - home"><img src="assets/img/favicon.svg" alt="" width="38" height="38"><span><b>Wexford House</b><small>Railway Variable Auditor</small></span></a>
+<p style="margin-top:18px;max-width:34ch">Lists every environment variable, with its value, in every Railway workspace you can reach, in one CSV file.</p></div>
+<div><h4>Guides</h4><ul><li><a href="index.html">Overview</a></li><li><a href="how-it-works.html">How it works</a></li><li><a href="checklist.html">Checklist</a></li><li><a href="sdk.html">SDK reference</a></li><li><a href="building.html">Building</a></li><li><a href="windows.html">Windows</a></li><li><a href="security.html">Security</a></li></ul></div>
+<div><h4>Reference</h4><ul><li><a href="sdk.html">SDK reference</a></li><li><a href="https://docs.railway.com/integrations/api">Railway API documentation</a></li></ul></div>
+</div>
+<p class="legal">&copy; Wexford House. Licensed under the GNU General Public Licence, version 3. Man pages: <code>railway-variable-auditor(1)</code>, <code>railway-variable-audit(1)</code>, <code>railway-variable-auditor-csv(5)</code>, <code>railway(3)</code>, <code>rvcore(3)</code>. Screenshots show demonstration data.</p>
+</div>
+</footer>
+</body>
+</html>

@@ -1,0 +1,9 @@
+<!--
+  Copyright (c) 2026, Ross WD Cameron <ross@wexfordhouse.co.za>
+  Copyright (c) 2026, Wexford House <https://wexfordhouse.co.za/>
+-->
+<svg width="64" height="64" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+<defs><clipPath id="wh-c"><rect width="100" height="100" rx="10.5"/></clipPath></defs>
+<g clip-path="url(#wh-c)"><rect width="100" height="100" fill="#0A56AB"/><path d="M100 67.7V100H66.4Z" fill="#DA9832"/></g>
+<path d="M12.3 27.5 L25.2 72.4 L32.9 72.4 L40.4 49 L47.4 72.4 L54.8 72.4 L59.4 55 L73.8 55 L73.8 72.4 L83.8 72.4 L83.8 27.5 L73.8 27.5 L73.8 44.2 L61.1 44.2 L64.5 27.5 L55.5 27.5 L50 48.7 L44 27.5 L37 27.5 L29.5 51.3 L22.7 27.5Z" fill="#fff"/>
+</svg>

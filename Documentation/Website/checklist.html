@@ -1,0 +1,113 @@
+<!--
+  Copyright (c) 2026, Ross WD Cameron <ross@wexfordhouse.co.za>
+  Copyright (c) 2026, Wexford House <https://wexfordhouse.co.za/>
+-->
+<!doctype html>
+<html lang="en-ZA">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Checklist | Wexford House Railway Variable Auditor</title>
+<meta name="description" content="What to do by hand after Railway&rsquo;s security disclosure: database credentials, buckets, GitHub, registry credentials, third party keys and logs, with links to Railway&rsquo;s own posts.">
+<meta name="theme-color" content="#0a1f35">
+<link rel="icon" href="assets/img/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="site-header">
+<div class="wrap">
+<a class="brand" href="index.html" aria-label="Wexford House Railway Variable Auditor - home"><img src="assets/img/favicon.svg" alt="" width="38" height="38"><span><b>Wexford House</b><small>Railway Variable Auditor</small></span></a>
+<input type="checkbox" id="nav-toggle" class="nav-toggle" aria-label="Toggle navigation menu">
+<label for="nav-toggle" class="nav-button" aria-hidden="true"><span></span><span></span><span></span></label>
+<nav class="site-nav" aria-label="Main"><a href="index.html">Overview</a><a href="how-it-works.html">How it works</a><a href="checklist.html" aria-current="page">Checklist</a><a href="sdk.html">SDK reference</a><a href="building.html">Building</a><a href="windows.html">Windows</a><a href="security.html">Security</a></nav>
+</div>
+</header>
+<main id="main">
+
+<section class="page-head"><div class="wrap">
+<div class="crumbs"><a href="index.html">Overview</a> &nbsp;/&nbsp; Checklist</div>
+<span class="eyebrow">For administrators</span>
+<h1>Checklist: what to do by hand</h1>
+<p class="lead">The tool lists your variables. It cannot rotate them. Railway&rsquo;s own posts give the steps, and this page points to them.</p>
+</div></section>
+<div class="wrap doc">
+<article>
+
+<div class="callout"><strong class="t">Where these steps come from</strong><p>Everything on this page is Railway&rsquo;s advice from <a href="https://blog.railway.com/p/security-disclosure-wednesday-october-21st">its security disclosure</a> and the recommendation posts that followed. This page summarises them. Follow Railway&rsquo;s posts for the exact steps, because they may be updated.</p></div>
+
+<h2 id="status">Status</h2>
+<div class="callout warn"><strong class="t">As of 22 October 2026, 06:29 UTC</strong><p>On <a href="https://status.railway.com/">status.railway.com</a> (incident QH8L8B3E), builds were available again for <b>Pro and Enterprise</b> workspaces, with other plans to follow. Railway also <b>invalidated all API tokens</b> at 04:17 UTC. Sign in again with <code>railway login</code>, and create new tokens for any scripts. Check the status page for the latest, because this changes.</p></div>
+
+<h2 id="order">A sensible order</h2>
+<ol class="steps">
+<li><h3>Database credentials</h3><p>Use <b>Regenerate</b> on each database service. Do not edit the password variable by hand and do not run <code>ALTER USER</code>. See <a href="#databases">Databases</a>.</p></li>
+<li><h3>Run the audit</h3><p>Use this tool to write <code>audit.csv</code>, the list of every variable in every workspace. Work through it row by row. Anything that could not be read is listed on the results screen. Deal with it first.</p></li>
+<li><h3>Buckets, GitHub and registry credentials</h3><p>Railway already reset bucket credentials and invalidated GitHub tokens. Finish the steps below.</p></li>
+<li><h3>Third party keys</h3><p>Rotate every key in <code>audit.csv</code> at its provider, and check usage.</p></li>
+<li><h3>Set the new values and redeploy every consumer</h3><p>&ldquo;Containers read variables only at startup&rdquo;, so every service that uses a changed value must be redeployed. Then check the logs.</p></li>
+</ol>
+
+<h2 id="databases">Databases</h2>
+<ul class="checks">
+<li><b>Other roles are yours to rotate.</b> Application roles of a Postgres service (a role with its own password in a connection URL or a variable) are marked <code>database-role</code> in <code>audit.csv</code>. Change the password in the database, then in every variable that holds it, then redeploy. Rows marked <code>database-credential</code> are for the template&rsquo;s own login and its pasted copies.</li>
+<li><b>Regenerate the template&rsquo;s own login, do not edit.</b> On the database service, open the Database tab, Config, Connection, and click Regenerate next to the password. Railway changes the password inside the database and the variable together. The database restarts and drops every open session.</li>
+<li><b>Replace pasted connection strings</b> with references such as <code>${{ Postgres.DATABASE_URL }}</code>. Services that reference the database variables pick up the change on their next deploy. Pasted copies do not. <code>audit.csv</code> marks pasted copies with the category <code>database-credential</code>.</li>
+<li><b>Update outside consumers</b> of the public connection URL by hand: local development, CI, reporting tools and scheduled jobs.</li>
+<li><b>Railway&rsquo;s posts:</b> <a href="https://blog.railway.com/p/security-disclosure-recommendation-rotate-postgresql-database-credentials">PostgreSQL</a> <a href="https://blog.railway.com/p/security-disclosure-recommendation-rotate-mysql-database-credentials">MySQL</a> <a href="https://blog.railway.com/p/security-disclosure-recommendation-rotate-redis-database-credentials">Redis</a> <a href="https://blog.railway.com/p/security-disclosure-recommendation-rotate-mongodb-database-credentials">MongoDB</a>.</li>
+</ul>
+
+<h2 id="buckets">Buckets</h2>
+<ul class="checks">
+<li>Railway invalidated and regenerated the access key and secret key of every bucket in every environment. The bucket name, address and objects are unchanged.</li>
+<li>Redeploy every service that uses a bucket. Replace any pasted old key with a reference, then deploy. Update outside tools such as local development and CI.</li>
+<li>Check each bucket for unexpected uploads or deletions. Buckets have no automatic backups.</li>
+<li><b>Railway&rsquo;s post:</b> <a href="https://blog.railway.com/p/security-disclosure-recommendation-redeploy-buckets-and-reconnect-github-after-the-credential-reset">Redeploy buckets and reconnect GitHub</a>.</li>
+</ul>
+
+<h2 id="github">GitHub and registry credentials</h2>
+<ul class="checks">
+<li><b>Reconnect GitHub.</b> Railway invalidated the tokens it held for your GitHub connection. Reconnect your account, check the Railway GitHub App, and confirm each service&rsquo;s repository and that autodeploy is on.</li>
+<li><b>Registry credentials are not variables.</b> Railway also removed GitHub tokens that were stored as registry credentials. Those tokens still work on GitHub until you revoke them. Revoke each one, create a new token with <code>read:packages</code>, and enter it in each service under Settings, Source, Registry Credentials. This tool cannot do this for you.</li>
+<li><b>Check GitHub</b> for unexpected access: <a href="https://blog.railway.com/p/security-disclosure-recommendation-check-for-anomalous-github-access">Railway's post</a>.</li>
+</ul>
+
+<h2 id="providers">Third party keys</h2>
+<p><code>audit.csv</code> marks the unshared variables, INI tokens and keys from other providers. They are most likely keys from other companies, and the tool cannot rotate them. For each one, rotate it at the provider, then check that provider for unexpected use. Railway has posts for these providers:</p>
+<div class="table-wrap"><table>
+<thead><tr><th>Provider</th><th>Railway&rsquo;s post</th></tr></thead>
+<tbody>
+<tr><td>AWS</td><td><a href="https://blog.railway.com/p/security-disclosure-recommendation-check-for-anomalous-aws-access">Check for anomalous AWS access</a></td></tr>
+<tr><td>Google Cloud</td><td><a href="https://blog.railway.com/p/security-disclosure-recommendation-check-for-anomalous-gcp-access">Check for anomalous GCP access</a></td></tr>
+<tr><td>Stripe</td><td><a href="https://blog.railway.com/p/security-disclosure-recommendation-check-for-unexpected-usage-in-stripe">Check for unexpected usage in Stripe</a></td></tr>
+<tr><td>OpenAI</td><td><a href="https://blog.railway.com/p/security-disclosure-recommendation-check-for-unexpected-openai-usage">Check for unexpected OpenAI usage</a></td></tr>
+<tr><td>Anthropic</td><td><a href="https://blog.railway.com/p/security-disclosure-recommendation-check-for-unexpected-anthropic-usage">Check for unexpected Anthropic usage</a></td></tr>
+<tr><td>Grok</td><td><a href="https://blog.railway.com/p/security-disclosure-recommendation-check-for-unexpected-grok-usage">Check for unexpected Grok usage</a></td></tr>
+<tr><td>OpenRouter</td><td><a href="https://blog.railway.com/p/security-disclosure-recommendation-check-for-unexpected-openrouter-usage">Check for unexpected OpenRouter usage</a></td></tr>
+</tbody></table></div>
+<p>Variables for tools that are not in this list, such as Xero, follow the same pattern: rotate the credential at the provider using the process that tool needs, then look for unusual activity.</p>
+
+<h2 id="logs">Logs and audit logs</h2>
+<ul class="checks">
+<li>Review the logs of your services for unusual activity, as Railway advises.</li>
+<li>Review the Railway audit log for variable reads, registry credential changes and deployments that your team or Railway Staff did not make. How long it is kept depends on your plan.</li>
+</ul>
+
+<nav class="pager" aria-label="Page navigation"><a class="prev" href="how-it-works.html"><small>Previous</small><b>How it works</b></a><a class="next" href="sdk.html"><small>Next</small><b>SDK reference</b></a></nav>
+</article>
+<aside class="toc" aria-label="On this page"><h4>On this page</h4><ul><li><a href="#status">Status</a></li><li><a href="#order">A sensible order</a></li><li><a href="#databases">Databases</a></li><li><a href="#buckets">Buckets</a></li><li><a href="#github">GitHub and registry</a></li><li><a href="#providers">Third party keys</a></li><li><a href="#logs">Logs</a></li></ul></aside>
+</div>
+</main>
+<footer class="site-footer">
+<div class="wrap">
+<div class="cols">
+<div><a class="brand" href="index.html" aria-label="Wexford House Railway Variable Auditor - home"><img src="assets/img/favicon.svg" alt="" width="38" height="38"><span><b>Wexford House</b><small>Railway Variable Auditor</small></span></a>
+<p style="margin-top:18px;max-width:34ch">Lists every environment variable, with its value, in every Railway workspace you can reach, in one CSV file.</p></div>
+<div><h4>Guides</h4><ul><li><a href="index.html">Overview</a></li><li><a href="how-it-works.html">How it works</a></li><li><a href="checklist.html">Checklist</a></li><li><a href="sdk.html">SDK reference</a></li><li><a href="building.html">Building</a></li><li><a href="windows.html">Windows</a></li><li><a href="security.html">Security</a></li></ul></div>
+<div><h4>Reference</h4><ul><li><a href="sdk.html">SDK reference</a></li><li><a href="https://docs.railway.com/integrations/api">Railway API documentation</a></li></ul></div>
+</div>
+<p class="legal">&copy; Wexford House. Licensed under the GNU General Public Licence, version 3. Man pages: <code>railway-variable-auditor(1)</code>, <code>railway-variable-audit(1)</code>, <code>railway-variable-auditor-csv(5)</code>, <code>railway(3)</code>, <code>rvcore(3)</code>. Screenshots show demonstration data.</p>
+</div>
+</footer>
+</body>
+</html>

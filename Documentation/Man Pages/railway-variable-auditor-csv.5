@@ -1,0 +1,247 @@
+.\" Copyright (c) 2026, Wexford House <https://wexfordhouse.co.za/>
+.\" Copyright (c) 2026, Ross Cameron <ross@wexfordhouse.co.za>
+.\" Licensed under the GNU General Public License, version 3.
+.TH RAILWAY-VARIABLE-AUDITOR-CSV 5 "October 2026" "Railway Variable Auditor 0.1.0" "File Formats Manual"
+.SH NAME
+railway-variable-auditor-csv \- files written by the Railway variable audit
+.SH DESCRIPTION
+.BR railway-variable-auditor (1)
+and
+.BR railway-variable-audit (1)
+write their files into a run folder named
+.IR run-YYYYMMDD-HHMMSS ,
+in UTC, readable only by its owner. The CSV files are UTF-8 with a header row and RFC 4180 quoting (fields containing a comma, a quote or a line break are wrapped in double quotes, and a quote inside is doubled). Timestamps use ISO 8601 in UTC, for example
+.BR 2026-10-22T08:30:00Z .
+.PP
+Only
+.I audit.csv
+holds values.
+.PP
+The audit writes one file,
+.IR audit.csv ,
+and reads
+.IR policy.ini .
+The other files here (changes.csv, roles.csv, not-changed.csv, deploys.csv, progress.csv, undo-report.csv and undo-preview.csv) belong to the rotation code that was set aside. No program writes them now. They are described so that files from an earlier build can still be read.
+.SH FILES
+.SS audit.csv
+Written by
+.BR railway-variable-auditor (1)
+and
+.BR railway-variable-audit (1).
+One row for each variable of each service and environment, and for each shared variable.
+.B Contains live secrets.
+Owner only. Delete it when you have finished.
+.TP
+.B workspace, project, environment, service, variable
+As in
+.IR changes.csv .
+The service is \fBshared\fR for an environment level shared variable.
+.TP
+.B value
+The stored value. A reference appears as written. A sealed variable appears empty.
+.TP
+.B category, reason
+What the classifier thinks (see below), to help with the work. Nothing is changed.
+.TP
+.B (categories)
+The values of the category column are listed under
+.I not-changed.csv
+below.
+.SS changes.csv (set aside)
+One row for each variable in each container that will be changed. Written, and flushed to disk, before anything is sent to Railway.
+.TP
+.B workspace, project, environment
+Names.
+.TP
+.B service
+The service name, or
+.B shared
+for a variable at environment level.
+.TP
+.B variable
+Variable name.
+.TP
+.B old_value, new_value
+The value before and after the change.
+.TP
+.B timestamp
+When the file was written, before anything was sent. When each step was accepted is in
+.IR progress.csv .
+.TP
+.B workspace_id, project_id, environment_id, service_id
+Railway ids. Staging and undo use these, so a rename does not break them.
+.B service_id
+is empty for an environment level shared variable.
+.PP
+.B This file contains live secrets.
+It is created readable only by its owner (mode 0600 on Linux and macOS, a restricted access list on Windows, which is not yet tested). Keep it until you have checked your services, because undo needs it, then delete it.
+.SS roles.csv (set aside)
+One row for each database role that will have its password changed. Only written when there are roles. Written before anything is sent.
+.TP
+.B project_id, environment_id, db_service_id, project, environment, db_service
+Which Postgres service.
+.TP
+.B role, database, host, port
+The role, the database in its connection URL, and the host and port from the URL (for the report: the connection itself goes through the secure tunnel).
+.TP
+.B old_password, new_password
+The passwords before and after.
+.PP
+.B This file contains live secrets.
+It is owner only, like
+.IR changes.csv .
+Undo needs it. Keep it until you have checked your services, then delete it.
+.SS not-changed.csv (set aside, but its categories are used by audit.csv)
+One row for each variable that was deliberately left alone. No values.
+.TP
+.B workspace, project, environment, service, variable
+As in
+.IR changes.csv .
+.TP
+.B category
+One of the following. The reason column explains the choice.
+.RS
+.TP
+.B ini-config
+INI file content, which may hold tokens for other systems such as Xero. Change by hand.
+.TP
+.B database-credential
+A credential for a Railway database, or a pasted copy of one, that is not a rotatable role. Use Regenerate on the database service for the template's own login, and replace pasted copies with references. For a role that could not be rotated safely the reason says why (for example, the password also appears in another environment).
+.TP
+.B database-role
+The variable holds the password of an application role of a Postgres service, found through a connection URL on the private network. Change it in the database and in every variable that holds it.
+.TP
+.B internal-hostname
+Names another container on the private network.
+.TP
+.B reference
+The whole value is one ${{...}} reference. The source variable owns it.
+.TP
+.B unshared
+Used in one place only, or an empty or unreadable value (it may be sealed). Most likely an API key. Rotate it with its provider.
+.TP
+.B shared-config
+Shared, but does not look like a secret.
+.TP
+.B shared-manual
+A shared secret the program cannot safely regenerate, or a group that you switched off on the review screen. Rotate it by hand.
+.TP
+.B shared
+A shared secret with an internal secret name and a format that can be reproduced. Make one new value and set it everywhere it is used.
+.RE
+.TP
+.B reason
+A short plain explanation, for example
+.IR "used by one service only" .
+.PP
+Treat every row except
+.B shared-config
+and
+.B reference
+as part of your checklist of things to rotate or check by hand. Railway's incident may have exposed these too, and this program cannot rotate a key that belongs to another company. See the website page "Checklist".
+.SS run-report.csv (set aside)
+One row for each workspace and project.
+.TP
+.B workspace, project
+Names. The project is empty on a workspace row.
+.TP
+.B status
+.BR done ,
+.B skipped
+or
+.BR failed .
+.TP
+.B detail
+The reason for a skipped or failed row, for example
+.IR "insufficient role"
+or
+.IR "excluded by policy" .
+.PP
+Any row that is not
+.B done
+makes the scan incomplete.
+.SS deploys.csv (set aside)
+The services to redeploy: a service that has a changed variable, and any service that uses a changed variable by reference.
+.TP
+.B project_id, environment_id, service_id, project, environment, service
+Ids and names.
+.SS progress.csv (set aside)
+No values. One row each time a step is accepted or fails. Staging and deploying read this file, which is what makes resuming safe.
+.TP
+.B phase
+.BR stage ,
+.BR role ,
+.B deploy
+or
+.BR undo-deploy .
+The key of a
+.B role
+step is the project id, environment id, database service id and role name.
+.TP
+.B key
+The step: project id, environment id and service id (or
+.BR shared ),
+separated by
+.BR | .
+.TP
+.B status, detail, timestamp
+.B done
+or
+.BR failed ,
+the reason, and when.
+.SS undo-report.csv, undo-preview.csv (set aside)
+Written by an undo (or by a preview, which changes nothing), one row for each row of
+.IR changes.csv .
+No values.
+.TP
+.B workspace, project, environment, service, variable
+As in
+.IR changes.csv .
+A database role is a row with
+.B role:<name>
+as the variable, the database service as the service, and no workspace.
+.TP
+.B status
+.B restored
+(the old value, or the old role password, was written back),
+.B conflict
+(the current value is neither the new nor the old value, so it was left alone),
+.B already-original
+(the variable already holds the old value),
+.B skipped
+(the project was not selected) or
+.BR failed .
+.TP
+.B detail, timestamp
+The reason, and when.
+.SS policy.ini
+In the user configuration folder, for example
+.IR ~/.config/railway-variable-auditor/policy.ini .
+A key file with one group,
+.BR [policy] ,
+and these lists, separated by semicolons:
+.TP
+.B skip_workspaces
+Workspace ids that are not scanned. A skipped workspace makes the scan incomplete.
+.TP
+.B never_rotate
+Variables that must never be rotated, as
+.IR project/environment/service/NAME .
+If one member of a shared group is listed, the whole group is left alone.
+.TP
+.B credential_names
+Extra variable names to treat as database credentials.
+.TP
+.B internal_names
+Extra variable names that mark an internal secret.
+.SH EXAMPLES
+.nf
+workspace,project,environment,service,variable,old_value,new_value,timestamp,workspace_id,project_id,environment_id,service_id
+Work,alpha,production,api,SESSION_SECRET,9f2c...,41ab...,2026-10-22T08:30:00Z,w1,p1,e1,s1
+.fi
+.SH SEE ALSO
+.BR railway-variable-auditor (1),
+.BR railway-variable-audit (1),
+.BR rvcore (3)
+.SH AUTHORS
+Ross Cameron <ross@wexfordhouse.co.za>, Wexford House.
