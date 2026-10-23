@@ -40,7 +40,7 @@
 <div class="wrap doc">
 <article>
 
-<div class="callout warn"><strong class="t">What has been tested</strong><p>The Windows build is cross-compiled on Linux. It has been installed, run and uninstalled <b>under Wine in a container</b>, with a fake Railway CLI and invented data. <b>It has not been run on Windows 11.</b> Wine is not Windows. The setup program is not code signed. Treat this as a first build, and report what you find.</p></div>
+<div class="callout warn"><strong class="t">What has been tested</strong><p>The setup program has been <b>installed and run on Windows 11 Pro</b>, with the real Railway CLI from npm and a real account. The window and the audit command both completed a live audit. Testing found that the window could not read the Railway CLI&rsquo;s output; that is fixed (see <a href="#tested">below</a>). <b>Sign in from the window and uninstalling have not yet been tried on Windows 11.</b> The setup program is not code signed. Report what you find.</p></div>
 
 <h2 id="before">Before you install</h2>
 <ul class="checks">
@@ -73,8 +73,11 @@
 <h2 id="differences">What is different on Windows</h2>
 <ul class="checks">
 <li><b>The audit goes on your Desktop</b>, as on Linux, in a new <code>run-YYYYMMDD-HHMMSS</code> folder.</li>
-<li><b>The audit file is restricted to you</b> with an access list instead of mode 0600. This has not been checked on a real Windows file system. Do not rely on it: keep the file on an encrypted disk, and delete it when you have finished (see <a href="security.html#csv">Security</a>).</li>
+<li><b>The audit file is restricted to you</b> with an access list instead of mode 0600. On Windows 11 the list held one entry, full control for the signed-in user, and nothing inherited. Do not rely on it alone: keep the file on an encrypted disk, and delete it when you have finished (see <a href="security.html#csv">Security</a>).</li>
 <li><b>File names and arguments are UTF-8</b>, so names with accents come through.</li>
+<li><b>The window keeps a hidden console.</b> The Railway CLI needs one to return its output. When you press <span class="ui">Sign in with Railway</span>, the console is shown so you can see the prompt and the link, then hidden again. Do not close it with its close button while signing in: Windows may close the window with it.</li>
+<li><b>The run folder is named in UTC</b>, not local time. In South Africa it reads two hours behind the clock.</li>
+<li><b>A large audit is slow.</b> Every request starts the Railway CLI again. 666 variables in 32 projects took about 6 minutes with the command line and about 12 in the window.</li>
 </ul>
 
 <h2 id="tested">What was and was not tested</h2>
@@ -87,14 +90,20 @@
 <tr><td><code>railway-variable-audit.exe</code> runs a whole audit against a fake CLI, writes one <code>audit.csv</code> with both workspaces, and prints no value</td><td><b>Done</b> (Wine)</td></tr>
 <tr><td>The window opens</td><td><b>Done</b> (Wine, headless X server). Not looked at.</td></tr>
 <tr><td>Uninstall removes the folder, the Apps entry and the <code>PATH</code> entry</td><td><b>Done</b> (Wine)</td></tr>
-<tr><td>Running on Windows 11</td><td><b>Not tried</b></td></tr>
-<tr><td>The setup wizard on screen</td><td><b>Not looked at</b></td></tr>
-<tr><td>The real Railway CLI on Windows (<code>railway.exe</code>, or <code>railway.cmd</code> from npm)</td><td><b>Not tried</b></td></tr>
-<tr><td>No console window flashing when the window runs the CLI</td><td><b>Not checked</b></td></tr>
-<tr><td>The access list on <code>audit.csv</code></td><td><b>Not checked</b></td></tr>
+<tr><td>Running on Windows 11</td><td><b>Done</b> (Windows 11 Pro, build 26200)</td></tr>
+<tr><td>The setup wizard on screen</td><td><b>Done.</b> Installs, and a silent install over it with <code>/S</code> works</td></tr>
+<tr><td>Settings, Apps entry and <code>PATH</code> entry written</td><td><b>Done</b> (Windows 11)</td></tr>
+<tr><td>The real Railway CLI on Windows (<code>railway.cmd</code> from npm, version 5.71.0)</td><td><b>Done.</b> Found on the <code>PATH</code>; a live audit of 666 variables in 2 workspaces and 32 projects, from the command line and from the window</td></tr>
+<tr><td><code>railway-variable-audit.exe</code> against the fake CLI</td><td><b>Done</b> (Windows 11)</td></tr>
+<tr><td>No console window flashing when the window runs the CLI</td><td><b>Done.</b> None seen during a whole live audit, checked every quarter second</td></tr>
+<tr><td>The access list on <code>audit.csv</code></td><td><b>Done.</b> The signed-in user only, nothing inherited</td></tr>
+<tr><td><span class="ui">Open the folder</span> on the results screen</td><td><b>Done.</b> Opens File Explorer on the run folder</td></tr>
+<tr><td><span class="ui">Sign in with Railway</span> in the window</td><td><b>Not tried</b> on Windows 11</td></tr>
+<tr><td>Uninstall</td><td><b>Not tried</b> on Windows 11</td></tr>
 <tr><td>Code signing</td><td><b>None.</b> SmartScreen will warn.</td></tr>
 </tbody></table></div>
 <p>The first Wine run found a real fault: the bundle was missing GLib&rsquo;s two <code>gspawn-win64-helper</code> programs, so the audit could not start the Railway CLI. It is fixed, and the test now covers it.</p>
+<p>The first Windows 11 run found another. The window showed <q>The Railway CLI did not report a version.</q> and could not audit. A window has no console, and started from a program without one, the real Railway CLI exits successfully but prints nothing. The fake CLI used under Wine does print, so the Wine test could not catch it. The window now keeps a hidden console of its own, and the CLI&rsquo;s output comes back.</p>
 
 <h2 id="building">Building the setup program</h2>
 <p>On Rocky Linux 10 (or another Red Hat Enterprise Linux 10 system with EPEL):</p>
@@ -105,6 +114,7 @@ make windows-test                    # the Wine smoke test (needs docker)</code>
 <li><b>The libraries are MSYS2&rsquo;s.</b> GTK 4, json-glib and what they need are downloaded from the MSYS2 UCRT64 repository, and each file is checked against a SHA-256 hash pinned in <code>Support/windows/msys2.lock</code>. A file that does not match is refused.</li>
 <li><b>The setup program is hand written.</b> A small Win32 wizard (<code>Source/windows/installer</code>), with the files appended to it, compressed. There is no third party installer framework.</li>
 <li><b>Licences travel with it.</b> The licence text of every bundled package is installed under <code>share\licenses</code>. See <code>THIRD-PARTY-NOTICES.md</code>.</li>
+<li><b>It also builds on Windows, in MSYS2&rsquo;s UCRT64 shell</b>, with three adjustments. MSYS2 has no <code>x86_64-w64-mingw32-</code> names for <code>ar</code>, <code>strip</code> and <code>objdump</code> (copy them under those names onto the <code>PATH</code>), pass <code>WIN_WINDRES=windres</code> to <code>make</code>, and remove the <code>sys_root</code> line from <code>build/mingw-ucrt64.cross</code>.</li>
 </ul>
 
 <nav class="pager" aria-label="Page navigation"><a class="prev" href="building.html"><small>Previous</small><b>Building</b></a><a class="next" href="security.html"><small>Next</small><b>Security</b></a></nav>

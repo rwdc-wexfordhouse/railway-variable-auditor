@@ -76,7 +76,7 @@
 <tr><td>Railway SDK in C11</td><td><b>Built and tested</b> (31 unit tests, no network)</td><td><a href="sdk.html">SDK reference</a>, <code>railway(3)</code></td></tr>
 <tr><td>Engine pieces the audit uses: discover, read, classify, write CSV</td><td><b>Built and tested</b> against a fake Railway.</td><td><a href="sdk.html#engine">The engine</a>, <code>rvcore(3)</code></td></tr>
 <tr><td>Rotating, staging, deploying, undo, database passwords</td><td><b>Set aside.</b> The code is still in the source tree and its tests still run, but no program uses it.</td><td><a href="sdk.html#engine">The engine</a></td></tr>
-<tr><td>Windows 11 setup program</td><td><b>Built.</b> Installed, run and uninstalled under Wine only. Not run on Windows 11. Not code signed.</td><td><a href="windows.html">Windows</a></td></tr>
+<tr><td>Windows 11 setup program</td><td><b>Built.</b> Installed and run on Windows 11 with the real Railway CLI; a live audit completed from the window and the command line. Sign in from the window and uninstall not yet tried there. Not code signed.</td><td><a href="windows.html">Windows</a></td></tr>
 <tr><td>macOS</td><td>Not tried</td><td><a href="building.html">Building</a></td></tr>
 <tr><td>Live API checks</td><td>Workspaces and paging checked. Reading variables of real projects not yet checked.</td><td><a href="sdk.html#assumed">Documented and confirmed</a></td></tr>
 </tbody></table></div>
@@ -108,7 +108,7 @@
 <ul>
 <li><b>Linux, from source:</b> <code>meson setup build &amp;&amp; meson compile -C build &amp;&amp; meson test -C build</code>. See <a href="building.html">Building</a>.</li>
 <li><b>RPM (RHEL 10 and similar):</b> run <code>Packaging/build-rpm.sh</code>.</li>
-<li><b>Windows 11 setup program:</b> <code>make installer</code>, cross-compiled on Linux. It has been run under Wine only, so see <a href="windows.html">Windows</a> first.</li>
+<li><b>Windows 11 setup program:</b> <code>make installer</code>, cross-compiled on Linux. It has been run on Windows 11; see <a href="windows.html">Windows</a> for what was tested.</li>
 <li><b>Source and issues:</b> <a href="https://github.com/rwdc-wexfordhouse/railway-variable-auditor">GitHub</a>. Please report problems there. Security problems go to the contact in the <a href="https://github.com/rwdc-wexfordhouse/railway-variable-auditor/blob/main/SECURITY.md">security policy</a>.</li>
 </ul>
 </div>
