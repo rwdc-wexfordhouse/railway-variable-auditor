@@ -46,7 +46,7 @@
 
 <section class="section">
 <div class="wrap">
-<div class="callout"><strong class="t">What is built</strong><p>The audit window and the audit command are written and tested against a fake Railway. <b>They have not yet been run on the author&rsquo;s live account. Run one yourself and check the result.</b> The tool only reads. It never changes anything in Railway. It was called Railway Variable Cycler before it became an audit tool.</p></div>
+<div class="callout"><strong class="t">What is built</strong><p>The audit window and the audit command are written and tested against a fake Railway, and <b>both have completed a live audit of the author&rsquo;s account on Windows 11</b>: 666 variables in 2 workspaces and 32 projects. Run one yourself and check the result. The tool only reads. It never changes anything in Railway. It was called Railway Variable Cycler before it became an audit tool.</p></div>
 <div class="callout"><strong class="t">Independent, free software</strong><p>This is an independent tool by Wexford House. It is not made, endorsed or supported by Railway. It is released under the GNU General Public Licence, version 3, with no warranty. The audit file it writes holds live secrets, so keep it safe and delete it when you have finished.</p></div>
 <div class="section-head">
 <span class="eyebrow">At a glance</span>
@@ -71,14 +71,14 @@
 <div class="table-wrap"><table>
 <thead><tr><th>Part</th><th>State</th><th>Where</th></tr></thead>
 <tbody>
-<tr><td>Audit window (GTK 4)</td><td><b>Builds and runs.</b> Driven end to end on demonstration data in a headless compositor. Not yet used on a real screen with a real account.</td><td><a href="how-it-works.html#tour">Tour</a>, <code>railway-variable-auditor(1)</code></td></tr>
-<tr><td>Audit command</td><td><b>Built and tested</b> against a fake Railway CLI, including file permissions and that no value reaches the terminal. Not yet run on a live account.</td><td><a href="how-it-works.html#command">The command line</a>, <code>railway-variable-audit(1)</code></td></tr>
+<tr><td>Audit window (GTK 4)</td><td><b>Builds and runs.</b> Driven end to end on demonstration data in a headless compositor, and used on a real screen with a real account on Windows 11.</td><td><a href="how-it-works.html#tour">Tour</a>, <code>railway-variable-auditor(1)</code></td></tr>
+<tr><td>Audit command</td><td><b>Built and tested</b> against a fake Railway CLI, including file permissions and that no value reaches the terminal. Run on a live account on Windows 11.</td><td><a href="how-it-works.html#command">The command line</a>, <code>railway-variable-audit(1)</code></td></tr>
 <tr><td>Railway SDK in C11</td><td><b>Built and tested</b> (31 unit tests, no network)</td><td><a href="sdk.html">SDK reference</a>, <code>railway(3)</code></td></tr>
 <tr><td>Engine pieces the audit uses: discover, read, classify, write CSV</td><td><b>Built and tested</b> against a fake Railway.</td><td><a href="sdk.html#engine">The engine</a>, <code>rvcore(3)</code></td></tr>
 <tr><td>Rotating, staging, deploying, undo, database passwords</td><td><b>Set aside.</b> The code is still in the source tree and its tests still run, but no program uses it.</td><td><a href="sdk.html#engine">The engine</a></td></tr>
-<tr><td>Windows 11 setup program</td><td><b>Built.</b> Installed and run on Windows 11 with the real Railway CLI; a live audit completed from the window and the command line. Sign in from the window and uninstall not yet tried there. Not code signed.</td><td><a href="windows.html">Windows</a></td></tr>
+<tr><td>Windows 11 setup program</td><td><b>Built.</b> Installed, run and uninstalled on Windows 11 with the real Railway CLI; sign in and a live audit work from the window and the command line. Not code signed.</td><td><a href="windows.html">Windows</a></td></tr>
 <tr><td>macOS</td><td>Not tried</td><td><a href="building.html">Building</a></td></tr>
-<tr><td>Live API checks</td><td>Workspaces and paging checked. Reading variables of real projects not yet checked.</td><td><a href="sdk.html#assumed">Documented and confirmed</a></td></tr>
+<tr><td>Live API checks</td><td>Workspaces and paging checked. Reading variables of real projects checked in a live audit (32 projects, 666 variables).</td><td><a href="sdk.html#assumed">Documented and confirmed</a></td></tr>
 </tbody></table></div>
 </div>
 </section>
@@ -102,10 +102,11 @@
 <div class="wrap">
 <div class="section-head">
 <span class="eyebrow">Get it</span>
-<h2>Build it from the source.</h2>
-<p>No release has been published yet, so there is nothing to download. The whole source is on GitHub, and you can build it yourself.</p>
+<h2>Download it, or build it from the source.</h2>
+<p>Ready-made packages are on the <a href="https://github.com/rwdc-wexfordhouse/railway-variable-auditor/releases/latest">Releases</a> page. The whole source is on GitHub too, and you can build it yourself.</p>
 </div>
 <ul>
+<li><b>Windows 11:</b> download <code>RailwayVariableAuditor-0.1.0-setup.exe</code> from <a href="https://github.com/rwdc-wexfordhouse/railway-variable-auditor/releases/latest">Releases</a>. It is not code signed, so read <a href="windows.html">Windows</a> first.</li>
 <li><b>Linux, from source:</b> <code>meson setup build &amp;&amp; meson compile -C build &amp;&amp; meson test -C build</code>. See <a href="building.html">Building</a>.</li>
 <li><b>RPM (RHEL 10 and similar):</b> run <code>Packaging/build-rpm.sh</code>.</li>
 <li><b>Windows 11 setup program:</b> <code>make installer</code>, cross-compiled on Linux. It has been run on Windows 11; see <a href="windows.html">Windows</a> for what was tested.</li>

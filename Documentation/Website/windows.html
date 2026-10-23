@@ -40,7 +40,7 @@
 <div class="wrap doc">
 <article>
 
-<div class="callout warn"><strong class="t">What has been tested</strong><p>The setup program has been <b>installed and run on Windows 11 Pro</b>, with the real Railway CLI from npm and a real account. The window and the audit command both completed a live audit. Testing found that the window could not read the Railway CLI&rsquo;s output; that is fixed (see <a href="#tested">below</a>). <b>Sign in from the window and uninstalling have not yet been tried on Windows 11.</b> The setup program is not code signed. Report what you find.</p></div>
+<div class="callout warn"><strong class="t">What has been tested</strong><p>The setup program has been <b>installed and run on Windows 11 Pro</b>, with the real Railway CLI from npm and a real account. The window and the audit command both completed a live audit. Testing found that the window could not read the Railway CLI&rsquo;s output; that is fixed (see <a href="#tested">below</a>). Sign in from the window and uninstalling have been tried there too. The setup program is not code signed. Download it from <a href="https://github.com/rwdc-wexfordhouse/railway-variable-auditor/releases/latest">Releases</a>, and report what you find.</p></div>
 
 <h2 id="before">Before you install</h2>
 <ul class="checks">
@@ -98,8 +98,8 @@
 <tr><td>No console window flashing when the window runs the CLI</td><td><b>Done.</b> None seen during a whole live audit, checked every quarter second</td></tr>
 <tr><td>The access list on <code>audit.csv</code></td><td><b>Done.</b> The signed-in user only, nothing inherited</td></tr>
 <tr><td><span class="ui">Open the folder</span> on the results screen</td><td><b>Done.</b> Opens File Explorer on the run folder</td></tr>
-<tr><td><span class="ui">Sign in with Railway</span> in the window</td><td><b>Not tried</b> on Windows 11</td></tr>
-<tr><td>Uninstall</td><td><b>Not tried</b> on Windows 11</td></tr>
+<tr><td><span class="ui">Sign in with Railway</span> in the window</td><td><b>Done</b> (Windows 11)</td></tr>
+<tr><td>Uninstall</td><td><b>Done</b> (Windows 11)</td></tr>
 <tr><td>Code signing</td><td><b>None.</b> SmartScreen will warn.</td></tr>
 </tbody></table></div>
 <p>The first Wine run found a real fault: the bundle was missing GLib&rsquo;s two <code>gspawn-win64-helper</code> programs, so the audit could not start the Railway CLI. It is fixed, and the test now covers it.</p>
